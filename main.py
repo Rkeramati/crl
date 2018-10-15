@@ -37,15 +37,15 @@ def main(_):
 
     env = gym.make(FLAGS.env_name)
     config = Config.Config(env)
-    acpAgent = acp.acp(config)
-
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
 
         if not tf.test.is_gpu_available() and FLAGS.use_gpu:
             raise Exception("use_gpu flag is true when no GPUs are available")
 
         sess.run(tf.initializers.global_variables())
+        acpAgent = acp.acp(sess, config)
 
+        step = 0
         ep = 0
         loss = []
         lrHist = []
@@ -55,15 +55,16 @@ def main(_):
             while not terminal:
                 action = np.random.randint(config.nActions)
                 ns, r, terminal, _ = env.step(action)
-                acpAgent.observe(sess, s, action, ns)
+                acpAgent.observe(s, action, ns)
                 if ep >= 2:
-                    tempLoss, tempLr = acpAgent.train(sess)
+                    tempLoss, step = acpAgent.train()
                     loss.append(tempLoss)
-                    lrHist.append(tempLr)
                 s = ns
             ep += 1
-            print('epsiode = {},  avg lr = {}, avg loss = {}'.format(\
-                    ep,  np.mean(lrHist), np.mean(loss)))
+            #summary = sess.run([summary_op])
+            #train_writer.add_summary(summary, total_step)
+            print('epsiode = {},  step = {}, avg loss = {}'.format(\
+                    ep,  step, np.mean(loss)))
 
 if __name__ == '__main__':
   tf.app.run()

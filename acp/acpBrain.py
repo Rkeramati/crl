@@ -10,11 +10,10 @@ class acpBrain():
         self.nStates = config.acpNStates
         self.nActions = config.nActions
 
-        with tf.variable_scope("acp"):
-            self._build_placeholders()
-            self._build_model()
-            self._build_inferences()
-            self._build_optimizer(lrStart = config.acpLrStart, lrDecayRate = config.acpLrDecayRate,\
+        self._build_placeholders()
+        self._build_model()
+        self._build_inferences()
+        self._build_optimizer(lrStart = config.acpLrStart, lrDecayRate = config.acpLrDecayRate,\
                     lrDecayStep = config.acpLrDecayStep)
     def getInputSize(self):
         return (self.input.get_shape().as_list())
@@ -35,17 +34,23 @@ class acpBrain():
             conv1 = tf.layers.conv2d(self.input, filters=16, kernel_size=8, strides=4,\
                     padding='valid', activation=tf.nn.relu,\
                     kernel_initializer=tf.glorot_uniform_initializer(), name="conv1")
+
             conv2 =  tf.layers.conv2d(conv1, filters=32, kernel_size=4, strides=2,\
                     padding='valid', activation=tf.nn.relu,\
                     kernel_initializer=tf.glorot_uniform_initializer(), name="conv2")
+
             conv3 = tf.layers.conv2d(conv2, filters=64, kernel_size=3, strides=1,\
                     padding='valid', activation=tf.nn.relu,\
                     kernel_initializer=tf.glorot_uniform_initializer(), name="conv3")
 
+
             flatten = tf.layers.flatten(conv3, name="flat")
             dense1 = tf.layers.dense(flatten, 512, activation=tf.nn.relu,\
                     kernel_initializer=tf.glorot_uniform_initializer(), name="dense1")
+
+
             self.output = tf.layers.dense(dense1, self.nActions, activation=None, name="output")
+            tf.summary.histogram('acp_output', self.output)
 
     def _build_inferences(self):
             # Probabilities and Entropies
@@ -58,14 +63,19 @@ class acpBrain():
             crossEntropyLoss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.label,\
                     logits=self.output, name="corss_entropy")
             self.loss = tf.reduce_mean(crossEntropyLoss, name="loss")
+            tf.summary.scalar('acp_loss', self.loss)
 
             # Schedueling learning rate:
-            global_step = tf.Variable(0, trainable=False)
-            self.lr = tf.train.exponential_decay(lrStart, global_step,\
+            self.acp_train_step = tf.get_variable('acp_train_step',shape = [], dtype=tf.int32,\
+                    initializer=tf.zeros_initializer(), trainable=False)
+            tf.summary.scalar('acp_train_step', self.acp_train_step)
+
+            self.lr = tf.train.exponential_decay(lrStart, self.acp_train_step,\
                     lrDecayStep, lrDecayRate, staircase=True)
+            tf.summary.scalar('acp_lr', self.lr)
 
             self.optimizer = tf.train.AdamOptimizer(learning_rate=self.lr, name="Adam")
-            self.train_op = self.optimizer.minimize(self.loss, global_step=global_step)
+            self.train_op = self.optimizer.minimize(self.loss, global_step=self.acp_train_step)
 
     def predict(self, sess, nnInput):
         # Query the network for a given input x
@@ -84,9 +94,10 @@ class acpBrain():
                 feed_dict={self.input : nnInput})
         return output, probability, entropy
 
-    def train(self, sess, label, nnInput):
+    def train(self, sess, label, nnInput, summaryOp):
         # Train neural net on a batch of n=inputs
         # Outputs: loss, learning rate, step
         feed_dict = {self.input : nnInput, self.label: label}
-        loss, _, lr = sess.run([self.loss, self.train_op, self.lr], feed_dict=feed_dict)
-        return loss, lr
+        summary, step, loss, _, lr = sess.run([summaryOp, self.acp_train_step,\
+                self.loss, self.train_op, self.lr], feed_dict=feed_dict)
+        return summary, step, loss
