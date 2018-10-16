@@ -6,12 +6,17 @@ import tensorflow as tf
 import os
 
 class acp():
-    def __init__(self, sess, config):
+    def __init__(self, sess, config, is_train):
         with tf.variable_scope('acp'):
             self.brain = Brain.acpBrain(config)
             self.memory = Memory.acpMemory(self.brain.getInputSize(),\
                 self.brain.getLabelSize(), config)
             self.vision = Vision.acpVision()
+            sess.run(tf.global_variables_initializer())
+        self.total_loss = 0
+        self.total_accuracy = 0
+        self.average_loss = 0
+        self.average_accuracy = 0
 
         self.observation = []
         self.nObs = config.acpNStates
@@ -32,13 +37,16 @@ class acp():
         self.writer = tf.summary.FileWriter(config.logdir, self.sess.graph)
 
 
+
         # Load the weights if exist:
         ckpt = tf.train.get_checkpoint_state(self.savedir)
-        if ckpt and ckpt.model_checkpoint_path:
+        if ckpt and ckpt.model_checkpoint_path and not is_train: #when it is not training
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
             fname = os.path.join(self.savedir, ckpt_name)
             self._saver.restore(self.sess, fname)
             print(" [*] ACP Load SUCCESS: %s" % fname)
+        else:
+            print(" [!] ACP load failed")
 
     def makeInputLabel(self):
         # makes the observation into input output shape
@@ -80,7 +88,14 @@ class acp():
 
     def train(self):
         nnInput, nnLabel = self.memory.sample()
-        summary, train_step, loss = self.brain.train(self.sess, nnLabel, nnInput, self.summaryOp)
+        summary, train_step, loss, accuracy = self.brain.train(self.sess,\
+                nnLabel, nnInput, self.summaryOp)
+
+        self.total_accuracy += accuracy
+        self.total_loss += loss
+        self.average_loss = self.total_loss / train_step
+        self.average_accuracy = self.total_accuracy/train_step
+
         self.writer.add_summary(summary, train_step)
         if int(train_step)%self.saveFreq == 0:
             self._saver.save(self.sess, self.savedir+'/models', global_step=train_step)

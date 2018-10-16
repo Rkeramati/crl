@@ -14,9 +14,10 @@ from .ops import linear, conv2d, clipped_error
 from .utils import get_time, save_pkl, load_pkl
 
 class Agent(BaseModel):
-  def __init__(self, config, environment, sess):
+  def __init__(self, config, environment, acpAgent, sess):
     super(Agent, self).__init__(config)
     self.sess = sess
+    self.acpAgent = acpAgent
     self.weight_dir = 'weights'
 
     self.env = environment
@@ -51,10 +52,14 @@ class Agent(BaseModel):
         ep_rewards, actions = [], []
 
       # 1. predict
+      acp_screen = self.env._screen
       action = self.predict(self.history.get())
       # 2. act
       screen, reward, terminal = self.env.act(action, is_training=True)
-      # 3. observe
+      next_acp_screen = self.env._screen
+
+      #observe
+      self.acpAgent.observe(acp_screen, action, next_acp_screen)
       self.observe(screen, reward, action, terminal)
 
       if terminal:
@@ -82,8 +87,10 @@ class Agent(BaseModel):
           except:
             max_ep_reward, min_ep_reward, avg_ep_reward = 0, 0, 0
 
-          print('\navg_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f, max_ep_r: %.4f, min_ep_r: %.4f, # game: %d' \
+          print('\n[DQN] avg_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f, max_ep_r: %.4f, min_ep_r: %.4f, # game: %d' \
               % (avg_reward, avg_loss, avg_q, avg_ep_reward, max_ep_reward, min_ep_reward, num_game))
+          print('[ACP] avg_loss: %.4f, avg_accuracy: %.4f'%(self.acpAgent.average_loss,\
+                  self.acpAgent.average_accuracy))
 
           if max_avg_ep_reward * 0.9 <= avg_ep_reward:
             self.step_assign_op.eval({self.step_input: self.step + 1})
@@ -135,6 +142,7 @@ class Agent(BaseModel):
     if self.step > self.learn_start:
       if self.step % self.train_frequency == 0:
         self.q_learning_mini_batch()
+        self.acpAgent.train() # Training ACP agent
 
       if self.step % self.target_q_update_step == self.target_q_update_step - 1:
         self.update_target_q_network()

@@ -64,6 +64,9 @@ class acpBrain():
                     logits=self.output, name="corss_entropy")
             self.loss = tf.reduce_mean(crossEntropyLoss, name="loss")
             tf.summary.scalar('acp_loss', self.loss)
+            self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.label, 1),\
+                    tf.argmax(self.output, 1)), tf.float32))
+            tf.summary.scalar('acp_accuracy', self.accuracy)
 
             # Schedueling learning rate:
             self.acp_train_step = tf.get_variable('acp_train_step',shape = [], dtype=tf.int32,\
@@ -98,6 +101,6 @@ class acpBrain():
         # Train neural net on a batch of n=inputs
         # Outputs: loss, learning rate, step
         feed_dict = {self.input : nnInput, self.label: label}
-        summary, step, loss, _, lr = sess.run([summaryOp, self.acp_train_step,\
-                self.loss, self.train_op, self.lr], feed_dict=feed_dict)
-        return summary, step, loss
+        summary, step, loss, _, lr, accuracy = sess.run([summaryOp, self.acp_train_step,\
+                self.loss, self.train_op, self.lr, self.accuracy], feed_dict=feed_dict)
+        return summary, step, loss, accuracy
