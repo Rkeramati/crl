@@ -18,18 +18,19 @@ class Agent(BaseModel):
     super(Agent, self).__init__(config)
     self.sess = sess
     self.acpAgent = acpAgent
+
     self.weight_dir = 'weights'
 
     self.env = environment
     self.history = History(self.config)
     self.memory = ReplayMemory(self.config, self.model_dir)
+    with tf.variable_scope('dqn'):
+        with tf.variable_scope('step'):
+            self.step_op = tf.Variable(0, trainable=False, name='step')
+            self.step_input = tf.placeholder('int32', None, name='step_input')
+            self.step_assign_op = self.step_op.assign(self.step_input)
 
-    with tf.variable_scope('step'):
-      self.step_op = tf.Variable(0, trainable=False, name='step')
-      self.step_input = tf.placeholder('int32', None, name='step_input')
-      self.step_assign_op = self.step_op.assign(self.step_input)
-
-    self.build_dqn()
+        self.build_dqn()
 
   def train(self):
     start_step = self.step_op.eval()
@@ -59,7 +60,7 @@ class Agent(BaseModel):
       next_acp_screen = self.env._screen
 
       #observe
-      self.acpAgent.observe(acp_screen, action, next_acp_screen)
+      self.acpAgent.observe(acp_screen, action, next_acp_screen, self.step)
       self.observe(screen, reward, action, terminal)
 
       if terminal:
@@ -75,6 +76,10 @@ class Agent(BaseModel):
       total_reward += reward
 
       if self.step >= self.learn_start:
+        if self.step%self.save_step == 0:
+            self.save_model(self.step)
+            self.acpAgent.sample_inference() #save a sample inference
+
         if self.step % self.test_step == self.test_step - 1:
           avg_reward = total_reward / self.test_step
           avg_loss = self.total_loss / self.update_count
@@ -186,8 +191,7 @@ class Agent(BaseModel):
     self.w = {}
     self.t_w = {}
 
-    #initializer = tf.contrib.layers.xavier_initializer()
-    initializer = tf.truncated_normal_initializer(0, 0.02)
+    initializer = tf.contrib.layers.xavier_initializer()
     activation_fn = tf.nn.relu
 
     # training network
@@ -332,12 +336,17 @@ class Agent(BaseModel):
 
       self.writer = tf.summary.FileWriter('./logs/%s' % self.model_dir, self.sess.graph)
 
-    tf.initialize_all_variables().run()
+    #tf.initialize_all_variables().run()
+    # Run initializer after building the class
 
     self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op], max_to_keep=30)
 
-    self.load_model()
-    self.update_target_q_network()
+    #self.load_model()
+    #self.update_target_q_network()
+
+  def load(self):
+      self.load_model()
+      self.update_target_q_network()
 
   def update_target_q_network(self):
     for name in self.w.keys():

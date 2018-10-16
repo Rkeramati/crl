@@ -66,17 +66,20 @@ def main(_):
     if not FLAGS.use_gpu:
       config.cnn_format = 'NHWC'
 
+    # Becuase of code shittines, these steps should be after each other!
+    acpAgent = acp.acp(sess, ACPconfig)
+    agentDQN = Agent(config, env, acpAgent, sess)
+    acpAgent.setdir(agentDQN.model_dir)
+
     sess.run(tf.initializers.global_variables())
-
-    acpAgent = acp.acp(sess, ACPconfig, FLAGS.is_train)
-
-    with tf.variable_scope('dqn'):
-        agent = Agent(config, env, acpAgent, sess)
-
+    # Load both models if exist any checkpoint
+    acpAgent.load()
+    agentDQN.load()
     if FLAGS.is_train:
-      agent.train()
+        agentDQN.train()
     else:
-      agent.play()
+        raise Exception('agentDQN.play() is Not Implemented')
+        agentDQN.play()
 
 if __name__ == '__main__':
   tf.app.run()

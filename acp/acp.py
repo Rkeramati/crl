@@ -4,26 +4,41 @@ import acp.acpVision as Vision
 import numpy as np
 import tensorflow as tf
 import os
+import pickle
 
 class acp():
-    def __init__(self, sess, config, is_train):
+    def __init__(self, sess, config):
         with tf.variable_scope('acp'):
             self.brain = Brain.acpBrain(config)
             self.memory = Memory.acpMemory(self.brain.getInputSize(),\
                 self.brain.getLabelSize(), config)
             self.vision = Vision.acpVision()
             sess.run(tf.global_variables_initializer())
+
+        self.global_step = 0
         self.total_loss = 0
         self.total_accuracy = 0
         self.average_loss = 0
         self.average_accuracy = 0
+        self.inference_number = 0
 
+        self.config = config
         self.observation = []
         self.nObs = config.acpNStates
         self.nA = config.nActions
         self.saveFreq = config.acpSaveFreq
         self.sess = sess
-        self.savedir = config.savedir + '/acp-models'
+
+    def setdir(self, model_dir):
+        self.model_dir = model_dir
+        self.savedir = './checkpoints/acp/%s'%(self.model_dir)
+        self.logdir = './logs/%s'%(self.model_dir)
+        self.outputdir = './outputs/%s'%(self.model_dir)
+        if not os.path.exists(self.savedir):
+            os.makedirs(self.savedir)
+        if not os.path.exists(self.outputdir):
+            os.makedirs(self.outputdir)
+
 
         # Writer and Saver for acp:
         with tf.variable_scope('acp'):
@@ -31,16 +46,16 @@ class acp():
                 tf.summary.histogram(var.name, var)
 
         acp_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='acp')
-        self._saver = tf.train.Saver(acp_var_list, max_to_keep = config.max_checkpoint)
+        self._saver = tf.train.Saver(acp_var_list, max_to_keep = self.config.max_checkpoint)
 
         self.summaryOp = tf.summary.merge_all(key=tf.GraphKeys.SUMMARIES, scope='acp')
-        self.writer = tf.summary.FileWriter(config.logdir, self.sess.graph)
+        self.writer = tf.summary.FileWriter(self.logdir, self.sess.graph)
 
 
-
+    def load(self):
         # Load the weights if exist:
         ckpt = tf.train.get_checkpoint_state(self.savedir)
-        if ckpt and ckpt.model_checkpoint_path and not is_train: #when it is not training
+        if ckpt and ckpt.model_checkpoint_path: #when it is not training
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
             fname = os.path.join(self.savedir, ckpt_name)
             self._saver.restore(self.sess, fname)
@@ -70,11 +85,12 @@ class acp():
         return nnInput, nnLabel
 
 
-    def observe(self, s, a, ns):
+    def observe(self, s, a, ns, step):
         # sess: tf session, state: s, action: a, next state: ns tuple
         # preprocess both s and ns:
         s = self.vision.process(s)
         ns = self.vision.process(ns)
+        self.global_step = step
 
         if len(self.observation) >= self.nObs:
             self.observation.pop(0)
@@ -86,6 +102,20 @@ class acp():
         self.memory.add(nnInput, nnLabel)
         return self.brain.infer(self.sess, nnInput)
 
+    def sample_inference(self):
+        self.inference_number += 1
+        print('[ACP] Write a sample inference at %d step'%(self.global_step))
+
+        nnInput, nnLabel = self.memory.sample()
+        output, probability, entropy = self.brain.infer(self.sess, nnInput)
+        data = {'input': nnInput, 'label':nnLabel, 'output': output,\
+                'prob':probability, 'entropy':entropy}
+
+        f = open(self.outputdir+'inference_step_%d_%d.pkl'\
+                %(self.global_step, self.inference_number), 'wb')
+        pickle.dump(data, f)
+        f.close()
+
     def train(self):
         nnInput, nnLabel = self.memory.sample()
         summary, train_step, loss, accuracy = self.brain.train(self.sess,\
@@ -96,7 +126,7 @@ class acp():
         self.average_loss = self.total_loss / train_step
         self.average_accuracy = self.total_accuracy/train_step
 
-        self.writer.add_summary(summary, train_step)
-        if int(train_step)%self.saveFreq == 0:
-            self._saver.save(self.sess, self.savedir+'/models', global_step=train_step)
+        self.writer.add_summary(summary, self.global_step)
+        if int(self.global_step)%self.saveFreq == 0:
+            self._saver.save(self.sess, self.savedir+'/models', global_step=self.global_step)
         return loss, train_step
