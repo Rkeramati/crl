@@ -1,0 +1,75 @@
+import six
+from termcolor import colored
+import sys
+import numpy as np
+
+class env:
+    def __init__(self):
+        self.initial_state = 0
+        self.current_state = self.initial_state
+        self.info = {} # information of all states
+        # Actions Space
+        self.action_space = ["UP", "RI", "DO", "LE"]
+
+        #Attributes
+        self.nS = 120
+        self.size = 11 #Grid Size
+
+        #Modeling the Walls
+        self.no_right = [4, 15, 37, 48, 59, 70, 81, 92, 114, 56,\
+                74, 10, 21, 32, 43, 54, 65, 76, 87, 98, 109, 120]
+        self.no_left = [6, 17, 39, 50, 61, 72, 83, 94, 116, 56,\
+                74, 0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110]
+        self.no_down = [110, 111, 112, 113, 114, 115, 116, 117,\
+                118, 119, 120, 44, 46, 47, 48, 61, 62, 64, 65, 27 , 104]
+        self.no_up = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 66, 68,\
+                69, 70, 83, 84, 86, 87, 27, 104]
+
+        self.goal = 74
+        self.nA = len(self.action_space)
+        self.built_state() #Building state representation
+
+    def built_state(self):
+	#bulding information dictionary, defining a state
+        for i in range(self.nS):
+            self.info[i] = {"s": i, "r": 0, "done":False}
+        self.info[self.goal]["d"] = True
+        self.info[self.goal]["r"] = 1 # max reward
+
+    def step(self, action):
+        if self.action_space[action] == "RI":
+            if self.current_state not in self.no_right:
+                self.current_state += 1
+                if self.action_space[action] == "LE":
+                    if self.current_state not in self.no_left:
+                        self.current_state -= 1
+                if self.action_space[action] == "DO":
+                    if self.current_state not in self.no_down:
+                        self.current_state += 11
+                if self.action_space[action] == "UP":
+                    if self.current_state not in self.no_up:
+                        self.current_state -= 11
+
+        return self.info[self.current_state]["s"], self.info[self.current_state]["r"],\
+                self.info[self.current_state]["d"]
+
+
+    def reset(self, r_type = None):
+	# reseting the state to zero, and returning the current state
+        self.current_state = self.initial_state
+        return self.info[self.current_state]["s"]
+
+    def _render(self):
+        outfile = sys.stdout
+        desc = [[0 for x in range(self.size)] for y in range(self.size)]
+        for i in range(self.nS):
+            s = self.info[i]["s"]
+            if self.current_state == i:
+                attr = []
+                attr.append(six.u(str(31)))
+                attrs = six.u(';').join(attr)
+                s = six.u('\x1b[%sm%s\x1b[0m') % (attrs, s)
+
+                desc[i//self.size][i%self.size] = "%s "%(s)
+        print('Full State Representation')
+        outfile.write("\n".join(''.join(line) for line in desc)+"\n")
