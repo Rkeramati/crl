@@ -32,7 +32,7 @@ class acp():
     def setdir(self, model_dir):
         self.model_dir = model_dir
         self.savedir = './checkpoints/acp/%s'%(self.model_dir)
-        self.logdir = './logs/%s'%(self.model_dir)
+        self.logdir = './logs/%s'%(self.model_dir)+'/'
         self.outputdir = './outputs/%s'%(self.model_dir)
         if not os.path.exists(self.savedir):
             os.makedirs(self.savedir)
@@ -50,7 +50,6 @@ class acp():
 
         self.summaryOp = tf.summary.merge_all(key=tf.GraphKeys.SUMMARIES, scope='acp')
         self.writer = tf.summary.FileWriter(self.logdir, self.sess.graph)
-
 
     def load(self):
         # Load the weights if exist:

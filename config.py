@@ -1,6 +1,6 @@
 ACPHistory = 8
 ACPBatch = 32
-SAVEFREQ = 5000
+SAVEFREQ = 50000
 
 class ACPConfig():
      def __init__(self, env):
@@ -58,7 +58,7 @@ class AgentConfig(object):
   _save_step = SAVEFREQ
 
 class EnvironmentConfig(object):
-  env_name = 'Pong-v4'
+  env_name = 'Breakout-v0'
 
   screen_width  = 84
   screen_height = 84

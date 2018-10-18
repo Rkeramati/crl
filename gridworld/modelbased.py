@@ -8,7 +8,7 @@ class MRL():
         #self.printInfo()
         self.gamma = 0.99
         self.beta = 0.5
-        self.Hbeta = 2-np.log(nS)
+        self.Hbeta = 2
         self._updated = False
         self.it = 20
 

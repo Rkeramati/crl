@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 def parse_args():
      parser = argparse.ArgumentParser()
-     parser.add_argument('--entropy', type=bool, default=False, help='either to use entropy methods')
+     parser.add_argument('--entropy', type=int, default=0, help='either to use entropy methods')
      parser.add_argument('--random', type=float, default=0, help='how much randomness to add')
      parser.add_argument('--n_trial', type=int, default=10, help='number of trail for each method')
      parser.add_argument('--n_sample', type=int, default=5, help='number of samples for random env')
@@ -39,7 +39,7 @@ def main():
         print('sample {} out of {}'.format(sample, args.n_sample))
         np.save(save_dir + "map_sample_{}.npy".format(sample), env.map)
         for trial in range(args.n_trial):
-            mrl = MRL(env.nS, env.nA, entropy=args.entropy)
+            mrl = MRL(env.nS, env.nA, entropy=bool(args.entropy))
             for episode in range(args.max_ep):
                 terminal = False
                 step = 0
@@ -54,6 +54,7 @@ def main():
                 mrl.Qupdate()
             np.save(save_dir + "entopy_trail_{}_sample_{}.npy".format(trial, sample), mrl.entropy)
             np.save(save_dir + "count_trail_{}_sample_{}.npy".format(trial, sample), mrl.count)
+    np.save(save_dir + 'results.npy', result)
 
 if __name__ == '__main__':
     main()
