@@ -1,7 +1,7 @@
 ACPHistory = 8
 ACPBatch = 32
-SAVEFREQ = 50000
-SUMMARYFREQ = 100
+SAVEFREQ = 100000
+SUMMARYFREQ = 200
 
 class ACPConfig():
      def __init__(self, env):
@@ -12,7 +12,7 @@ class ACPConfig():
          self.savedir = './checkpoints'
          # ACP
          self.acpBatchSize = ACPBatch
-         self.acpMemorySize = int(1e2)
+         self.acpMemorySize = int(1e5)
          self.acpNStates = ACPHistory # stacked number of frames
          self.acpLrStart = 1e-3 # initial learning rate
          self.acpLrDecayStep = 1e5 # Final learning rate
@@ -29,8 +29,8 @@ class AgentConfig(object):
   acpHistory = ACPHistory
   acpBatch = ACPBatch
 
-  max_step = 1000 #500 * scale
-  memory_size = 1 * scale
+  max_step = 100 * scale
+  memory_size = 10 * scale
 
   batch_size = 32
   random_start = 30
@@ -61,7 +61,7 @@ class AgentConfig(object):
   summary_freq = SUMMARYFREQ
 
 class EnvironmentConfig(object):
-  env_name = 'Breakout-v0'
+  env_name = 'Breakout-v4'
 
   screen_width  = 84
   screen_height = 84

@@ -118,7 +118,6 @@ class acp():
                 nnLabel, nnInput, self.summaryOp)
 
         if int(self.global_step)%self.summaryFreq == 0:
-            print('Writing Summary')
             self.writer.add_summary(summary, self.global_step)
         if int(self.global_step)%self.saveFreq == 0:
             self._saver.save(self.sess, self.savedir+'/models', global_step=self.global_step)
