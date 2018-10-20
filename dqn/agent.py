@@ -18,7 +18,7 @@ class Agent(BaseModel):
     super(Agent, self).__init__(config)
     self.sess = sess
     self.acpAgent = acpAgent
-
+    self.summaryFreq = config.summary_freq
     self.weight_dir = 'weights'
 
     self.env = environment
@@ -182,7 +182,8 @@ class Agent(BaseModel):
       self.learning_rate_step: self.step,
     })
 
-    self.writer.add_summary(summary_str, self.step)
+    if int(self.step)%self.summaryFreq == 0:
+        self.writer.add_summary(summary_str, self.step)
     self.total_loss += loss
     self.total_q += q_t.mean()
     self.update_count += 1

@@ -1,6 +1,7 @@
 from __future__ import print_function
 import random
 import tensorflow as tf
+import tracemalloc
 
 from acp import acp
 from dqn.agent import Agent
@@ -82,4 +83,5 @@ def main(_):
         agentDQN.play()
 
 if __name__ == '__main__':
-  tf.app.run()
+
+    tf.app.run()

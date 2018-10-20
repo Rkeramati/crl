@@ -16,10 +16,6 @@ class acp():
             sess.run(tf.global_variables_initializer())
 
         self.global_step = 0
-        self.total_loss = 0
-        self.total_accuracy = 0
-        self.average_loss = 0
-        self.average_accuracy = 0
         self.inference_number = 0
 
         self.config = config
@@ -27,6 +23,7 @@ class acp():
         self.nObs = config.acpNStates
         self.nA = config.nActions
         self.saveFreq = config.acpSaveFreq
+        self.summaryFreq = config.acpSummaryFreq
         self.sess = sess
 
     def setdir(self, model_dir):
@@ -120,12 +117,9 @@ class acp():
         summary, train_step, loss, accuracy = self.brain.train(self.sess,\
                 nnLabel, nnInput, self.summaryOp)
 
-        self.total_accuracy += accuracy
-        self.total_loss += loss
-        self.average_loss = self.total_loss / train_step
-        self.average_accuracy = self.total_accuracy/train_step
-
-        self.writer.add_summary(summary, self.global_step)
+        if int(self.global_step)%self.summaryFreq == 0:
+            print('Writing Summary')
+            self.writer.add_summary(summary, self.global_step)
         if int(self.global_step)%self.saveFreq == 0:
             self._saver.save(self.sess, self.savedir+'/models', global_step=self.global_step)
         return loss, train_step

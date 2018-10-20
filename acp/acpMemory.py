@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 class acpMemory():
     # Implement the replay buffer of acp (ACtion Predictor)
@@ -7,7 +8,6 @@ class acpMemory():
         self.batchSize = config.acpBatchSize
         self.memorySize = config.acpMemorySize
         self.counter = 0 #Counting number of elements in the memory
-        self.memory = [None] * self.memorySize
 
         # Defining sizes, coming from TF, frist element might be Batch Size = None
         assert inputSize[0]==None, 'inputSize first element should be None, for BatchSize'
@@ -19,13 +19,15 @@ class acpMemory():
         labelSize[0] = self.batchSize
         self.inputSize = tuple(inputSize)
         self.labelSize = tuple(labelSize)
+        # assigning the memory:
+        self.memory = [None] * self.memorySize
 
     def add(self, nnInput, nnLabel):
         # add a new example, nnInput and nnLabel to the memory
         # class acpPreprocess should make sure the shapes are input are as expected to
         # Neural net
         if self.counter >= self.memorySize:
-            self.memory.pop(0) # Remove the least recent example
+            del self.memory[0] # Remove the least recent example
             self.memory.append((nnInput, nnLabel)) # Assign to the last one
         else:
             self.memory[self.counter] = (nnInput, nnLabel)
