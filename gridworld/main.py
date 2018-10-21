@@ -2,20 +2,23 @@ import argparse
 
 import os
 import numpy as np
-from fourroom import fourroom
-from modelbased import MRL
+from env import ENV
+from MRL import hindsight, outcome, mbie
 import time
 import sys
 import matplotlib.pyplot as plt
 
 def parse_args():
      parser = argparse.ArgumentParser()
-     parser.add_argument('--entropy', type=int, default=0, help='either to use entropy methods')
+     parser.add_argument('--method', default='MBIE', help='what method to use')
+     parser.add_argument('--ent_known', type=int, default=0, help='if knowing entropy')
      parser.add_argument('--random', type=float, default=0, help='how much randomness to add')
+     parser.add_argument('--map_name', default='maps/map_fourroom_exp1.txt', help='map name')
      parser.add_argument('--n_trial', type=int, default=10, help='number of trail for each method')
-     parser.add_argument('--n_sample', type=int, default=5, help='number of samples for random env')
+     parser.add_argument('--n_sample', type=int, default=1, help='number of samples for random env')
      parser.add_argument('--max_ep', type=int, default=2000, help = 'maximum number of episdoes')
      parser.add_argument('--max_step', type=int, default=1000, help='maximum number of steps')
+     parser.add_argument('--beta', type=float, default=2, help='constant in MBIE')
      args = parser.parse_args()
      return args
 
@@ -31,15 +34,23 @@ def make_saving_dir(args):
 
 def main():
     args = parse_args()
+    for key in vars(args).keys():
+        print('[*] {} = {}'.format(key, vars(args)[key]))
+
     save_dir = make_saving_dir(args)
     result = np.zeros((args.n_sample, args.n_trial, args.max_ep))
 
     for sample in range(args.n_sample):
-        env = fourroom(random=args.random)
+        env = ENV(mapFile=args.map_name, random=args.random)
+        model = {'MBIE': mbie.MBIE(env, args.beta), 'MBIE_NS': mbie.MBIE_NS(env, args.beta),\
+            'DH': hindsight.DH(env, bool(args.ent_known),args.beta),\
+            'DO': outcome.DO(env, bool(args.ent_known), args.beta)}
         print('sample {} out of {}'.format(sample, args.n_sample))
+        env._render()
+
         np.save(save_dir + "map_sample_{}.npy".format(sample), env.map)
         for trial in range(args.n_trial):
-            mrl = MRL(env.nS, env.nA, entropy=bool(args.entropy))
+            mrl = model[args.method]
             for episode in range(args.max_ep):
                 terminal = False
                 step = 0
@@ -52,9 +63,13 @@ def main():
                     s = ns
                 result[sample, trial, episode] = step
                 mrl.Qupdate()
-            np.save(save_dir + "entopy_trail_{}_sample_{}.npy".format(trial, sample), mrl.entropy)
+            try:
+                np.save(save_dir + "entopy_trail_{}_sample_{}.npy".format(trial, sample), mrl.entropy)
+            except:
+                print("No entropy is saving")
             np.save(save_dir + "count_trail_{}_sample_{}.npy".format(trial, sample), mrl.count)
     np.save(save_dir + 'results.npy', result)
-
+    plt.plot(np.mean(result[0, :, :], axis = 0))
+    plt.show()
 if __name__ == '__main__':
     main()

@@ -1,9 +1,11 @@
-python main.py --entropy False --random 0 --n_trial 20 --n_sample 1 --max_step 500 --max_ep 1000
-python main.py --entropy True --random 0 --n_trial 20 --n_sample 1 --max_step 500 --max_ep 1000
+python main.py --n_trial=100 --max_step=500 --method='DH' --ent_known=1 --beta=5 >DH_known.txt
+python main.py --n_trial=100 --max_step=500 --method='DH' --ent_known=0 --beta=5 >DH.txt
 
-python main.py --entropy False --random 0.2 --n_trial 10 --n_sample 10 --max_step 500 --max_ep 1000
-python main.py --entropy True --random 0.2 --n_trial 10 --n_sample 10 --max_step 500 --max_ep 1000
+python main.py --n_trial=100 --max_step=500 --method='DO' --ent_known=1 --beta=5 >DO_known.txt
+python main.py --n_trial=100 --max_step=500 --method='DO' --ent_known=0 --beta=5 >DO.txt
 
-python main.py --entropy False --random 0.4 --n_trial 10 --n_sample 10 --max_step 1000 --max_ep 2000
-python main.py --entropy True --random 0.4 --n_trial 10 --n_sample 10 --max_step 1000 --max_ep 2000
+python main.py --n_trial=100 --max_step=500 --method='MBIE' --ent_known=1 --beta=0.2 >MBIE.txt
+python main.py --n_trial=100 --max_step=500 --method='MBIE_NS' --ent_known=0 --beta=0.2 >MBIE.txt
+
+
 

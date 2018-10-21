@@ -1,34 +1,31 @@
 import numpy as np
 
-class MRL():
+class DO():
     # Class for performing model based RL
-    def __init__(self, nS, nA, entropy=False):
-        self.entropy_use = entropy
+    # With determinism of outcome H(s'| s, a)
+    def __init__(self, env, entropy_known=False, const=2):
+        self.env =env
+        self.entropy_known = entropy_known
 
-        #self.printInfo()
         self.gamma = 0.99
-        self.beta = 0.5
-        self.Hbeta = 2
+        self.beta = const
         self._updated = False
-        self.it = 20
+        self.it = 20 # iteration for solving
 
-        self.nS = nS # number of states
-        self.nA = nA # number of actions
+        self.nS = env.nS # number of states
+        self.nA = env.nA # number of actions
 
         self.count = np.zeros((self.nS, self.nA)) + 1 # Counting s,a pairs
         self.reward = np.zeros((self.nS, self.nA)) # Reward Only function of states
         self.transitions = np.zeros((self.nS, self.nS, self.nA)) # s, s', a
         self.Q = np.zeros((self.nS, self.nA)) + 1/(1-self.gamma)
 
-        self.entropy = np.zeros((self.nS, self.nA)) # Entropy s, a = \sum_{s'} H(s'|s,a)
+        self.entropy = np.zeros((self.nS, self.nA)) + self.nS
+        if entropy_known:
+            self.fill_entropy()
 
         self._total_reward = np.zeros((self.nS, self.nA))
         self._transition_count = np.zeros((self.nS, self.nS, self.nA)) + 1
-
-
-    def printInfo(self):
-        print('[*] Info: Reward is only a function of states')
-        print('[*] Info: Transitions are intialized by 1/nS, and ')
 
     def observe(self, s, a, ns, r):
         # adding state action next state reward to the history
@@ -45,29 +42,29 @@ class MRL():
                     if np.sum(self._transition_count[i,:,a])!=0:
                         self.transitions[i,  :, a] =\
                             self._transition_count[i, :, a]/np.sum(self._transition_count[i, :, a])
+                        if not self.entropy_known:
+                            self.entropy[i, a] = -np.sum(self.transitions[i, :, a]\
+                                    * np.log(self.transitions[i, :, a]))
                     self.reward[i, a] = self._total_reward[i, a]/ self.count[i, a]
-                    self.entropy[i, a] = -np.sum(self.transitions[i, :, a] \
-                            * np.log(self.transitions[i, :, a]))
         self._updated = True
 
     def Qupdate(self):
-        if self.entropy_use:
-            self._MBIE_H()
-        else:
-            self._MBIE_EB()
-    def _MBIE_EB(self):
-        # Updating Q Values with MBIE-EB
+        # Updating Q Values with MBIE + Entropies
         self._update()
         for i in range(self.it):
             self.Q = self.reward + \
                     self.gamma * np.sum(self.transitions * np.expand_dims(np.max(self.Q, axis=1, keepdims=True), axis=-1), axis=1) +\
-                    self.beta/ np.sqrt(self.count)
-    def _MBIE_H(self):
-        self._update()
-        for i in range(self.it):
-            self.Q = self.reward + \
-                    self.gamma * np.sum(self.transitions * np.expand_dims(np.max(self.Q, axis=1, keepdims=True), axis=-1), axis=1) +\
-                    (1/(self.Hbeta + self.entropy))/np.sqrt(self.count)
+                    (1/(self.beta + self.entropy))/ np.sqrt(self.count)
 
+    def fill_entropy(self):
+        det_ent = 0
+        sto_ent = np.log(self.nS)
 
+        for row in range(self.env.size):
+            for col in range(self.env.size):
+                s = self.env.state[row, col]
+                if self.env.map[row, col] == 's':
+                    self.entropy[s, :] = sto_ent
+                else:
+                    self.entropy[s, :] = det_ent
 
