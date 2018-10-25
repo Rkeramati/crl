@@ -63,6 +63,7 @@ def main():
                     s = ns
                 result[sample, trial, episode] = step
                 mrl.Qupdate()
+                print(episode, step, np.max(mrl.Q))
             try:
                 np.save(save_dir + "entopy_trail_{}_sample_{}.npy".format(trial, sample), mrl.entropy)
             except:

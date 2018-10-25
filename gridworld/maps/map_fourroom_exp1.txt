@@ -9,6 +9,6 @@ $13
 #s sss### ###
 #s  s #s  s #
 #s  ss#  ss #
-# s    g  s #
+# s     g s #
 # s s #s s s#
 #############
