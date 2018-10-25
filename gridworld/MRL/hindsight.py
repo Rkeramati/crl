@@ -15,11 +15,12 @@ class DH():
 
         self.nS = env.nS # number of states
         self.nA = env.nA # number of actions
-
-        self.count = np.zeros((self.nS, self.nS, self.nA)) + 1 # Counting s,a pairs
+        self.reset()
+    def reset(self):
+        self.count = np.zeros((self.nS, self.nS, self.nA))+1 # Counting s,a pairs
         self.reward = np.zeros((self.nS, self.nS, self.nA)) # Reward Only function of states
         self.transitions = np.zeros((self.nS, self.nS, self.nA)) # s, s', a
-        self.Q = np.zeros((self.nS, self.nA)) + 1/(1-self.gamma)
+        self.Q = np.zeros((self.nS, self.nA))
         self.entropy = np.zeros((self.nS, self.nS, self.nA)) + np.log(self.nA) # For all action entropy is equal
 
         if self.entropy_known:
@@ -54,9 +55,12 @@ class DH():
         # Updating Q Values
         self._update()
         for i in range(self.it):
-            self.Q = self.gamma * np.sum(self.transitions * np.expand_dims(np.max(self.Q, axis=1, keepdims=True), axis=-1), axis=1) +\
-                    np.sum(self.transitions * (self.reward + (1/(self.beta+self.entropy))\
-                    / np.sqrt(self.count)), axis = 1)
+            m = np.max(self.Q, axis=1)
+            for s in range(self.nS):
+                for a in range(self.nA):
+                    self.Q[s,a] = self.gamma * np.sum(self.transitions[s, : ,a] * m) +\
+                            np.sum(self.transitions[s, : ,a] * (self.reward[s, : ,a] + (1/(self.beta+self.entropy[s, : , a]))\
+                            / np.sqrt(self.count[s, : ,a])))
     def fill_entropy(self):
          det_ent = 0
          sto_ent = np.log(self.nA)

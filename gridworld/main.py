@@ -51,12 +51,13 @@ def main():
         np.save(save_dir + "map_sample_{}.npy".format(sample), env.map)
         for trial in range(args.n_trial):
             mrl = model[args.method]
+            mrl.reset()
             for episode in range(args.max_ep):
                 terminal = False
                 step = 0
                 s = env.reset()
                 while not terminal and step < args.max_step:
-                    action = np.argmax(mrl.Q[s, :])
+                    action = np.random.choice(np.flatnonzero(mrl.Q[s, :] == mrl.Q[s,:].max()))
                     ns, r, terminal = env.step(action)
                     mrl.observe(s,action,ns,r)
                     step += 1
@@ -64,13 +65,14 @@ def main():
                 result[sample, trial, episode] = step
                 mrl.Qupdate()
                 print(episode, step, np.max(mrl.Q))
+                #print(np.max(mrl.Q, axis=1).reshape(13,13))
             try:
                 np.save(save_dir + "entopy_trail_{}_sample_{}.npy".format(trial, sample), mrl.entropy)
             except:
                 print("No entropy is saving")
             np.save(save_dir + "count_trail_{}_sample_{}.npy".format(trial, sample), mrl.count)
     np.save(save_dir + 'results.npy', result)
-    plt.plot(np.mean(result[0, :, :], axis = 0))
-    plt.show()
+    #plt.plot(np.mean(result[0, :, :], axis = 0))
+    #plt.show()
 if __name__ == '__main__':
     main()

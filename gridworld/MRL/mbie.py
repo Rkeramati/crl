@@ -12,7 +12,8 @@ class MBIE():
 
         self.nS = env.nS # number of states
         self.nA = env.nA # number of actions
-
+        self.reset()
+    def reset(self):
         self.count = np.zeros((self.nS, self.nA)) # Counting s,a pairs
         self.reward = np.zeros((self.nS, self.nA)) # Reward Only function of states
         self.transitions = np.zeros((self.nS, self.nS, self.nA)) # s, s', a
@@ -64,7 +65,9 @@ class MBIE_NS():
 
         self.nS = env.nS # number of states
         self.nA = env.nA # number of actions
+        self.reset()
 
+    def reset(self):
         self.count = np.zeros((self.nS, self.nS, self.nA)) + 1 # Counting s,a pairs
         self.reward = np.zeros((self.nS, self.nS, self.nA)) # Reward Only function of states
         self.transitions = np.zeros((self.nS, self.nS, self.nA)) # s, s', a
@@ -92,9 +95,12 @@ class MBIE_NS():
         self._updated = True
 
     def Qupdate(self):
-        # Updating Q Values with MBIE-EB
         self._update()
         for i in range(self.it):
-            self.Q = self.gamma * np.sum(self.transitions * np.expand_dims(np.max(self.Q, axis=1, keepdims=True), axis=-1), axis=1) +\
-                    np.sum(self.transitions * (self.reward + self.beta/ np.sqrt(self.count)), axis = 1)
+            m = np.max(self.Q, axis=1)
+            for s in range(self.nS):
+                for a in range(self.nA):
+                    self.Q[s,a] = self.gamma * np.sum(self.transitions[s, :, a] * m)+\
+                            np.sum(self.transitions[s, :, a] * (self.reward[s, :, a] +\
+                            self.beta/np.sqrt(1+self.count[s, :,a])))
 
