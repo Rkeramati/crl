@@ -25,7 +25,7 @@ class DO():
         self.entropy = np.zeros((self.nS, self.nA)) + self.nS
         if self.entropy_known:
             self.fill_entropy()
-            print(self.entropy)
+
 
         self._total_reward = np.zeros((self.nS, self.nA))
         self._transition_count = np.zeros((self.nS, self.nS, self.nA)) + 1
@@ -60,7 +60,7 @@ class DO():
                 for a in range(self.nA):
                     self.Q[s,a] = self.reward[s,a] + \
                             self.gamma * np.sum(self.transitions[s,:,a] * m) +\
-                            (1/(self.beta + 50*self.entropy[s,a]))/ np.sqrt(self.count[s,a])
+                            (1/(self.beta + 10*self.entropy[s,a]))/ np.sqrt(self.count[s,a])
 
     def fill_entropy(self):
         det_ent = 0
