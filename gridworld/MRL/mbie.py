@@ -18,17 +18,20 @@ class MBIE():
         self.reward = np.zeros((self.nS, self.nA)) # Reward Only function of states
         self.transitions = np.zeros((self.nS, self.nS, self.nA)) # s, s', a
         self.Q = np.zeros((self.nS, self.nA))
+        self.terminal = np.zeros(self.nS)
 
         self._total_reward = np.zeros((self.nS, self.nA))
-        self._transition_count = np.zeros((self.nS, self.nS, self.nA))
+        self._transition_count = np.zeros((self.nS, self.nS, self.nA)) + 1
 
-    def observe(self, s, a, ns, r):
+    def observe(self, s, a, ns, r, terminal):
         # adding state action next state reward to the history
         # reward is associated with ns
         self._updated = False
         self.count[s, a] += 1
         self._total_reward[s, a] += r
         self._transition_count[s, ns, a] += 1
+        if terminal:
+            self.terminal[ns] = 1
 
     def _update(self):
         if not self._updated:
@@ -48,10 +51,15 @@ class MBIE():
             m = np.max(self.Q, axis=1)
             for s in range(self.nS):
                 for a in range(self.nA):
-                    self.Q[s,a] = self.reward[s,a] + \
-                            self.gamma * np.sum(self.transitions[s, :, a] * m)+\
-                            self.beta/np.sqrt(1+self.count[s,a])
+                    if self.terminal[s] != 1:
+                        self.Q[s,a] = self.reward[s,a] + \
+                                self.gamma * np.sum(self.transitions[s, :, a] * m)+\
+                                self.beta/np.sqrt(1+self.count[s,a])
+                    else:
+                        self.Q[s,a] = self.reward[s,a] + self.beta/np.sqrt(1+self.count[s, a])
 
+        #np.set_printoptions(precision=1, linewidth=100, suppress=True)
+        #print(np.sum(self.count, axis=1).reshape(11,11))
 class MBIE_NS():
     # Class for performing model based RL
     # reward being a function of s, a, ns

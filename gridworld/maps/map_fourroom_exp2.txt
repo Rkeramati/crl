@@ -1,12 +1,12 @@
 $11
 ###########
 #0  s#ssss#
-#s       s#
+#s      ds#
 #s ss# sss#
 #  s # sss#
 ## ###   s#
 #s ss### ##
 #s ss#  ss#
 #s     g  #
-# ss #s ss#
+#dss #s ss#
 ###########

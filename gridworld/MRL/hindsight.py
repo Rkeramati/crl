@@ -3,13 +3,14 @@ import numpy as np
 class DH():
     # Class for performing model based RL
     # reward being a function of s, a, ns
-    def __init__(self, env, entropy_known=False, const=2):
+    def __init__(self, env, entropy_known=False, const=2, lambd=10):
         self.entropy_known = entropy_known
         self.env = env
 
         #self.printInfo()
         self.gamma = 0.99
         self.beta = const
+        self.lambd = lambd
         self._updated = False
         self.it = 20 # iteration for solving
 
@@ -59,7 +60,7 @@ class DH():
             for s in range(self.nS):
                 for a in range(self.nA):
                     self.Q[s,a] = self.gamma * np.sum(self.transitions[s, : ,a] * m) +\
-                            np.sum(self.transitions[s, : ,a] * (self.reward[s, : ,a] + (1/(self.beta+self.entropy[s, : , a]))\
+                            np.sum(self.transitions[s, : ,a] * (self.reward[s, : ,a] + (1/(self.beta+self.lambd*self.entropy[s, : , a]))\
                             / np.sqrt(self.count[s, : ,a])))
     def fill_entropy(self):
          det_ent = 0

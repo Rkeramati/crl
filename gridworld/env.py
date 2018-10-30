@@ -6,12 +6,12 @@ import numpy as np
 class ENV:
     def __init__(self, mapFile='map.txt', random = 0, random_start=False):
         self.random_start = random_start
-        self.to_int = {'#': 0, ' ':1, 's': 2, 'g': 3, '0': 4}
+        self.to_int = {'#': 0, ' ':1, 's': 2, 'g': 3, '0': 4, 'd': 5}
         self.to_symbol = {v: k for k, v in self.to_int.items()}
         self.random_symbol = 's'
 
-        self.reward_map = {'#': 0, ' ':0, 's': 0, 'g': 1, '0': 0}
-        self.terminal_map = {'#': 0,  ' ':0, 's': 0, 'g': 1, '0': 0}
+        self.reward_map = {'#': 0, ' ':0, 's': 0, 'g': 1, '0': 0, 'd': 0.2}
+        self.terminal_map = {'#': 0,  ' ':0, 's': 0, 'g': 1, '0': 0, 'd': 1}
         self.action_space = ['UP', 'RI', 'DO', 'LE']
         self.nA = len(self.action_space)
 
@@ -26,7 +26,7 @@ class ENV:
             while not picked:
                 row = np.random.randint(self.size)
                 col = np.random.randint(self.size)
-                if self.map[row, col] not in [self.to_int['#'], self.to_int['g']]:
+                if self.map[row, col] not in [self.to_int['#'], self.to_int['g'], self.to_int['d']]:
                     picked = True
             self.current_state = (row, col)
             self.current_terminal = False
@@ -85,7 +85,7 @@ class ENV:
             for col in range(size):
                 state[row, col] = counter
                 symbol = line[col]
-                if symbol not in ['#', 'g']:
+                if symbol not in ['#', 'g', 'd']:
                     if np.random.rand() < random:
                         symbol = self.random_symbol
 
