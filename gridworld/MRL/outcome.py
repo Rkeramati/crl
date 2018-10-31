@@ -66,14 +66,14 @@ class DO():
                     if self.terminal[s] != 1:
                         self.Q[s,a] = self.reward[s,a] + \
                                 self.gamma * np.sum(self.transitions[s,:,a] * m) +\
-                                (1/(self.beta + self.lambd*self.entropy[s,a]))/ np.sqrt(self.count[s,a])
+                                ((1/((1/self.beta) + self.lambd*self.entropy[s,a]) + self.beta)/np.sqrt(self.count[s,a]))
                     else:
                         self.Q[s,a] = self.reward[s,a] +\
-                                (1/(self.beta+self.lambd*self.entropy[s,a])/np.sqrt(self.count[s,a]))
-        np.set_printoptions(precision=1, linewidth=100, suppress=True)
+                                ((1/((1/self.beta)+self.lambd*self.entropy[s,a]) +self.beta )/np.sqrt(self.count[s,a]))
+        #np.set_printoptions(precision=1, linewidth=100, suppress=True)
 
-        print(np.mean(1/(self.beta+self.lambd*self.entropy)/np.sqrt(self.count),axis=1).reshape(11,11))
-        print(np.sum(self.reward, axis=1).reshape(11,11))
+        #print(np.mean(1/(self.beta+self.lambd*self.entropy)/np.sqrt(self.count),axis=1).reshape(11,11))
+        #print(np.sum(self.reward, axis=1).reshape(11,11))
         #print(np.max(self.Q, axis=1).reshape(11,11))
     def fill_entropy(self):
         det_ent = 0
