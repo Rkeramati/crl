@@ -23,6 +23,7 @@ class DH():
         self.transitions = np.zeros((self.nS, self.nS, self.nA)) # s, s', a
         self.Q = np.zeros((self.nS, self.nA))
         self.entropy = np.zeros((self.nS, self.nS, self.nA)) + np.log(self.nA) # For all action entropy is equal
+        self.terminal = np.zeros(self.nS)
 
         if self.entropy_known:
             self.fill_entropy()
@@ -30,13 +31,15 @@ class DH():
         self._total_reward = np.zeros((self.nS, self.nS, self.nA))
         self._transition_count = np.zeros((self.nS, self.nS, self.nA)) + 1
 
-    def observe(self, s, a, ns, r):
+    def observe(self, s, a, ns, r, terminal):
         # adding state action next state reward to the history
         # reward is associated with ns
         self._updated = False
         self.count[s, ns, a] += 1
         self._total_reward[s, ns, a] += r
         self._transition_count[s, ns, a] += 1
+        if terminal:
+            self.terminal[ns] = 1
 
     def _update(self):
         if not self._updated:
@@ -59,9 +62,21 @@ class DH():
             m = np.max(self.Q, axis=1)
             for s in range(self.nS):
                 for a in range(self.nA):
-                    self.Q[s,a] = self.gamma * np.sum(self.transitions[s, : ,a] * m) +\
-                            np.sum(self.transitions[s, : ,a] * (self.reward[s, : ,a] + (1/(self.beta+self.lambd*self.entropy[s, : , a]))\
-                            / np.sqrt(self.count[s, : ,a])))
+                    if self.terminal[s] != 1:
+                        self.Q[s,a] = self.gamma * np.sum(self.transitions[s, : ,a] * m) +\
+                            np.sum(self.transitions[s, : ,a] * (self.reward[s, : ,a] +\
+                            (self.beta + 1/((1/self.beta)+self.lambd*self.entropy[s, : , a]))\
+                            /np.sqrt(self.count[s, : ,a])))
+                    else: # that is sketchy but shouldn't make difference!
+                        self.Q[s,a] = np.sum(self.transitions[s, : ,a] * (self.reward[s, : ,a] +\
+                             (self.beta + 1/((1/self.beta)+self.lambd*self.entropy[s, : , a]))\
+                             /np.sqrt(self.count[s, : ,a])))
+        np.set_printoptions(precision=1, linewidth=100, suppress=True)
+
+        #print(np.mean(1/(self.beta+self.lambd*self.entropy)/np.sqrt(self.count),axis=1).reshape(11,11))
+       # print(np.sum(np.sum(self.reward, axis=1), axis=1).reshape(11,11))
+        print(np.max(self.Q, axis=1).reshape(11,11))
+        print(np.sum(np.sum(self.entropy, axis =1), axis=1).reshape(11,11))
     def fill_entropy(self):
          det_ent = 0
          sto_ent = np.log(self.nA)
@@ -69,7 +84,7 @@ class DH():
          for row in range(self.env.size):
              for col in range(self.env.size):
                  s = self.env.state[row, col]
-                 if self.env.map[row, col] == 's':
+                 if self.env.to_symbol[self.env.map[row, col]] in ['s', 'd', 'u', 'a', '#', 'g', 'x']:
                      self.entropy[s, :, :] = sto_ent
                  else:
                      self.entropy[s, :, :] = det_ent

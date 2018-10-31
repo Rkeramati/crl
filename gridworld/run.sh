@@ -1,11 +1,8 @@
-#python main.py --n_trial=2 --max_step=500 --method='DH' --ent_known=1 --beta=50 >DH_known.txt
-python main.py --n_trial=2 --max_step=500 --method='DH' --ent_known=0 --beta=50 >DH.txt
-
-python main.py --n_trial=2 --max_step=500 --method='DO' --ent_known=1 --beta=50 >DO_known.txt
-python main.py --n_trial=2 --max_step=500 --method='DO' --ent_known=0 --beta=50 >DO.txt
-
-python main.py --n_trial=2 --max_step=500 --method='MBIE' --ent_known=1 --beta=0.02 >MBIE.txt
-python main.py --n_trial=2 --max_step=500 --method='MBIE_NS' --ent_known=0 --beta=0.02 >MBIE_NS.txt
-
-
-
+python main.py --n_trial=2 --max_step=500 --max_ep=1000 --method='DO' --ent_known=1 --beta=0.005 --lambd=10 --map=maps/map_fourroom_exp2.txt
+python main.py --n_trial=2 --max_step=500 --max_ep=1000 --method='DO' --ent_known=1 --beta=0.005 --lambd=100 --map=maps/map_fourroom_exp2.txt
+python main.py --n_trial=2 --max_step=500 --max_ep=1000 --method='DO' --ent_known=1 --beta=0.005 --lambd=1000 --map=maps/map_fourroom_exp2.txt
+#
+#python main.py --n_trial=2 --max_step=500 --max_ep=1000 --method='DO' --ent_known=1 --beta=0.01 --lambd=10 --map=maps/map_fourroom_exp2.txt
+#python main.py --n_trial=2 --max_step=500 --max_ep=1000 --method='DO' --ent_known=1 --beta=0.01 --lambd=100 --map=maps/map_fourroom_exp2.txt
+#python main.py --n_trial=2 --max_step=500 --max_ep=1000 --method='DO' --ent_known=1 --beta=0.01 --lambd=1000 --map=maps/map_fourroom_exp2.txt
+#

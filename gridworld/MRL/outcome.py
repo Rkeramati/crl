@@ -82,7 +82,7 @@ class DO():
         for row in range(self.env.size):
             for col in range(self.env.size):
                 s = self.env.state[row, col]
-                if self.env.to_symbol[self.env.map[row, col]] in ['s','#','g','d']:
+                if self.env.to_symbol[self.env.map[row, col]] in ['s','#','g','d', 'x']:
                     self.entropy[s, :] = sto_ent
                 else:
                     self.entropy[s, :] = det_ent

@@ -6,12 +6,12 @@ import numpy as np
 class ENV:
     def __init__(self, mapFile='map.txt', random = 0, random_start=False):
         self.random_start = random_start
-        self.to_int = {'#': 0, ' ':1, 's': 2, 'g': 3, '0': 4, 'd': 5}
+        self.to_int = {'#': 0, ' ':1, 's': 2, 'g': 3, '0': 4, 'x': 5, 'd': 6, 'u': 7}
         self.to_symbol = {v: k for k, v in self.to_int.items()}
         self.random_symbol = 's'
 
-        self.reward_map = {'#': 0, ' ':0, 's': 0, 'g': 1, '0': 0, 'd': 0.2}
-        self.terminal_map = {'#': 0,  ' ':0, 's': 0, 'g': 1, '0': 0, 'd': 1}
+        self.reward_map = {'#': 0, ' ':0, 's': 0, 'g': 1, '0': 0, 'x': 0.2, 'd':0, 'u':0}
+        self.terminal_map = {'#': 0,  ' ':0, 's': 0, 'g': 1, '0': 0, 'x': 1, 'd':0, 'u':0}
         self.action_space = ['UP', 'RI', 'DO', 'LE']
         self.nA = len(self.action_space)
 
@@ -45,6 +45,11 @@ class ENV:
 
         if self.map[row_t, col_t] == self.to_int[self.random_symbol]: #pick action in random
             action = np.random.randint(self.nA)
+        # Change the action based on label:
+        if self.map[row_t, col_t] == self.to_int['d']:
+            action = 2
+        if self.map[row_t, col_t] == self.to_int['u']:
+            action = 0
 
         if self.action_space[action] == 'RI':
             col_t += 1
@@ -57,6 +62,8 @@ class ENV:
         # Check if valid
         if self.map[row_t, col_t] != self.to_int['#'] and not self.current_terminal:
             row, col = row_t, col_t
+
+
 
         reward = self.reward[row, col]
         if self.current_terminal:
