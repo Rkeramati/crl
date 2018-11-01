@@ -114,8 +114,8 @@ class MBIE_NS():
                     if self.terminal[s] != 1:
                         self.Q[s,a] = self.gamma * np.sum(self.transitions[s, :, a] * m)+\
                             np.sum(self.transitions[s, :, a] * (self.reward[s, :, a] +\
-                            self.beta/np.sqrt(1+self.count[s, :,a])))
+                            self.beta/np.sqrt(self.count[s, :,a])))
                     else:
-                        self.Q[s,a] = np.sum(self.transitions[s, :, a] * (self.reward[s, :, a] +\
-                             self.beta/np.sqrt(1+self.count[s, :,a])))
+                        self.Q[s,a] = self.reward[s, s, a] +\
+                             self.beta/np.sqrt(self.count[s, s, a])
 

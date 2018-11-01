@@ -68,15 +68,15 @@ class DH():
                             (self.beta + 1/((1/self.beta)+self.lambd*self.entropy[s, : , a]))\
                             /np.sqrt(self.count[s, : ,a])))
                     else: # that is sketchy but shouldn't make difference!
-                        self.Q[s,a] = np.sum(self.transitions[s, : ,a] * (self.reward[s, : ,a] +\
-                             (self.beta + 1/((1/self.beta)+self.lambd*self.entropy[s, : , a]))\
-                             /np.sqrt(self.count[s, : ,a])))
+                        self.Q[s,a] = self.reward[s, s ,a] +\
+                             (self.beta + 1/((1/self.beta)+self.lambd*self.entropy[s, s , a]))\
+                             /np.sqrt(self.count[s, s ,a])
         np.set_printoptions(precision=1, linewidth=100, suppress=True)
 
         #print(np.mean(1/(self.beta+self.lambd*self.entropy)/np.sqrt(self.count),axis=1).reshape(11,11))
        # print(np.sum(np.sum(self.reward, axis=1), axis=1).reshape(11,11))
-        print(np.max(self.Q, axis=1).reshape(11,11))
-        print(np.sum(np.sum(self.entropy, axis =1), axis=1).reshape(11,11))
+        #print(np.max(self.Q, axis=1).reshape(11,11)*100)
+        #print(np.sum(np.sum(self.reward + (self.beta + 1/((1/self.beta)+self.lambd*self.entropy)), axis =1), axis=1).reshape(11,11))
     def fill_entropy(self):
          det_ent = 0
          sto_ent = np.log(self.nA)
