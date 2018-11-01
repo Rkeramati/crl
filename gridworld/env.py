@@ -11,7 +11,7 @@ class ENV:
         self.random_symbol = 's'
 
         self.reward_map = {'#': 0, ' ':0, 's': 0, 'g': 1, '0': 0, 'x': 0.2, 'd':0, 'u':0}
-        self.terminal_map = {'#': 0,  ' ':0, 's': 0, 'g': 1, '0': 0, 'x': 1, 'd':0, 'u':0}
+        self.terminal_map = {'#': 0,  ' ':0, 's': 0, 'g': 1, '0': 0, 'x': 0, 'd':0, 'u':0}
         self.action_space = ['UP', 'RI', 'DO', 'LE']
         self.nA = len(self.action_space)
 
