@@ -1,5 +1,7 @@
 ACPHistory = 8
 ACPBatch = 32
+ACPLambd = 100
+ACPBeta = 0.01
 SAVEFREQ = 100000
 SUMMARYFREQ = 200
 
@@ -20,6 +22,8 @@ class ACPConfig():
          self.max_checkpoint = 30
          self.acpSaveFreq = SAVEFREQ
          self.acpSummaryFreq = SUMMARYFREQ
+         self.lambd = ACPLambd
+         self.beta = ACPBeta
 
 
 class AgentConfig(object):

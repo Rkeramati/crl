@@ -96,7 +96,12 @@ class acp():
 
         nnInput, nnLabel = self.makeInputLabel()
         self.memory.add(nnInput, nnLabel)
-        return self.brain.infer(self.sess, nnInput)
+        _, _, entropy = self.brain.infer(self.sess, nnInput)
+        return self.int_reward(entropy)
+
+    def int_reward(self, entropy):
+        reward = 1.0/(self.config.lambd * entropy + self.config.beta)
+        return reward
 
     def sample_inference(self):
         self.inference_number += 1

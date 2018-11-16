@@ -56,7 +56,7 @@ class acpBrain():
             # Probabilities and Entropies
             self.prob = tf.nn.softmax(self.output, axis = -1, name="softmax")
             # Compute the entropy of the probabilities
-            self.H = self.prob * tf.log(self.prob)
+            self.H = -tf.reduce_sum(self.prob * tf.log(self.prob))
 
     def _build_optimizer(self, lrStart, lrDecayStep, lrDecayRate):
         # loss function: Cross entropy with logits, sparse : exclusive classes

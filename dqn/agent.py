@@ -36,10 +36,10 @@ class Agent(BaseModel):
     start_step = self.step_op.eval()
     start_time = time.time()
 
-    num_game, self.update_count, ep_reward = 0, 0, 0.
-    total_reward, self.total_loss, self.total_q = 0., 0., 0.
+    num_game, self.update_count, ep_reward, ep_int_reward = 0, 0, 0., 0.
+    total_reward, self.total_loss, self.total_q, total_int_reward = 0., 0., 0., 0.
     max_avg_ep_reward = 0
-    ep_rewards, actions = [], []
+    ep_rewards, actions, ep_int_rewards = [], [], []
 
     screen, reward, action, terminal = self.env.new_random_game()
 
@@ -48,9 +48,9 @@ class Agent(BaseModel):
 
     for self.step in tqdm(range(start_step, self.max_step), ncols=70, initial=start_step):
       if self.step == self.learn_start:
-        num_game, self.update_count, ep_reward = 0, 0, 0.
-        total_reward, self.total_loss, self.total_q = 0., 0., 0.
-        ep_rewards, actions = [], []
+        num_game, self.update_count, ep_reward, ep_int_reward = 0, 0, 0., 0.
+        total_reward, self.total_loss, self.total_q, total_int_reward = 0., 0., 0., 0.
+        ep_rewards, ep_int_rewards, actions = [], [], []
 
       # 1. predict
       acp_screen = self.env._screen
@@ -60,20 +60,25 @@ class Agent(BaseModel):
       next_acp_screen = self.env._screen
 
       #observe
-      self.acpAgent.observe(acp_screen, action, next_acp_screen, self.step)
-      self.observe(screen, reward, action, terminal)
+      int_reward = self.acpAgent.observe(acp_screen, action, next_acp_screen, self.step)
+      #print('Intrinsic Reward Added: %g'%(int_reward))
+      self.observe(screen, reward + int_reward, action, terminal)
 
       if terminal:
         screen, reward, action, terminal = self.env.new_random_game()
 
         num_game += 1
         ep_rewards.append(ep_reward)
+        ep_int_rewards.append(ep_int_reward)
         ep_reward = 0.
+        ep_int_reward = 0.
       else:
         ep_reward += reward
+        ep_int_reward += int_reward
 
       actions.append(action)
       total_reward += reward
+      total_int_reward += int_reward
 
       if self.step >= self.learn_start:
         if self.step%self.save_step == 0:
@@ -82,6 +87,7 @@ class Agent(BaseModel):
 
         if self.step % self.test_step == self.test_step - 1:
           avg_reward = total_reward / self.test_step
+          avg_int_reward = total_int_reward / self.test_step
           avg_loss = self.total_loss / self.update_count
           avg_q = self.total_q / self.update_count
 
@@ -92,8 +98,8 @@ class Agent(BaseModel):
           except:
             max_ep_reward, min_ep_reward, avg_ep_reward = 0, 0, 0
 
-          print('\n[DQN] avg_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f, max_ep_r: %.4f, min_ep_r: %.4f, # game: %d' \
-              % (avg_reward, avg_loss, avg_q, avg_ep_reward, max_ep_reward, min_ep_reward, num_game))
+          print('\n[DQN] avg_r: %.4f, avg_int_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f, max_ep_r: %.4f, min_ep_r: %.4f, # game: %d' \
+              % (avg_reward, avg_int_reward, avg_loss, avg_q, avg_ep_reward, max_ep_reward, min_ep_reward, num_game))
           #print('[ACP] avg_loss: %.4f, avg_accuracy: %.4f'%(self.acpAgent.average_loss,\
                   #self.acpAgent.average_accuracy))
 
@@ -106,6 +112,7 @@ class Agent(BaseModel):
           if self.step > 180:
             self.inject_summary({
                 'average.reward': avg_reward,
+                'average.int reward': avg_int_reward,
                 'average.loss': avg_loss,
                 'average.q': avg_q,
                 'episode.max reward': max_ep_reward,
@@ -113,17 +120,21 @@ class Agent(BaseModel):
                 'episode.avg reward': avg_ep_reward,
                 'episode.num of game': num_game,
                 'episode.rewards': ep_rewards,
+                'episode.int_reward': ep_int_rewards,
                 'episode.actions': actions,
                 'training.learning_rate': self.learning_rate_op.eval({self.learning_rate_step: self.step}),
               }, self.step)
 
           num_game = 0
           total_reward = 0.
+          total_int_reward = 0.
           self.total_loss = 0.
           self.total_q = 0.
           self.update_count = 0
           ep_reward = 0.
+          ep_int_reward = 0.
           ep_rewards = []
+          ep_int_rewards = []
           actions = []
 
   def predict(self, s_t, test_ep=None):
