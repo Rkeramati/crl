@@ -12,7 +12,7 @@ class ACPConfig():
          self.savedir = './checkpoints'
          # ACP
          self.acpBatchSize = ACPBatch
-         self.acpMemorySize = int(1e5)
+         self.acpMemorySize = int(1e4)
          self.acpNStates = ACPHistory # stacked number of frames
          self.acpLrStart = 1e-3 # initial learning rate
          self.acpLrDecayStep = 1e5 # Final learning rate
@@ -30,7 +30,7 @@ class AgentConfig(object):
   acpBatch = ACPBatch
 
   max_step = 100 * scale
-  memory_size = 10 * scale
+  memory_size = 1 * scale
 
   batch_size = 32
   random_start = 30
@@ -89,6 +89,6 @@ def get_config(FLAGS):
               config.cnn_format = 'NHWC'
           else:
               config.cnn_format = 'NCHW'
-  if hasattr(config, k):
-      setattr(config, k, FLAGS.__getattr__(k))
+      if hasattr(config, k):
+          setattr(config, k, FLAGS.__getattr__(k))
   return config
