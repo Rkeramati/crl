@@ -100,7 +100,7 @@ class acp():
         return self.int_reward(entropy)
 
     def int_reward(self, entropy):
-        reward = 1.0/(self.config.lambd * entropy + self.config.beta)
+        reward = 0.01/(self.config.lambd * entropy + self.config.beta)
         return reward
 
     def sample_inference(self):
