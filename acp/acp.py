@@ -46,7 +46,7 @@ class acp():
         self._saver = tf.train.Saver(acp_var_list, max_to_keep = self.config.max_checkpoint)
 
         self.summaryOp = tf.summary.merge_all(key=tf.GraphKeys.SUMMARIES, scope='acp')
-        self.writer = tf.summary.FileWriter(self.logdir, self.sess.graph)
+        self.writer = tf.summary.FileWriter('%s'%(self.logdir)+'acp/', self.sess.graph)
 
     def load(self):
         # Load the weights if exist:
@@ -96,19 +96,24 @@ class acp():
 
         nnInput, nnLabel = self.makeInputLabel()
         self.memory.add(nnInput, nnLabel)
-        _, _, entropy = self.brain.infer(self.sess, nnInput)
-        return self.int_reward(entropy)
+        _, _, entropy, log_like, _ = self.brain.infer(self.sess, nnInput)
+        return self.int_reward(entropy, log_like)
 
-    def int_reward(self, entropy):
-        reward = 0.01/(self.config.lambd * entropy + self.config.beta)
-        return reward
+    def int_reward(self, entropy,log_like):
+        scale = 1e-3
+        part1 = (0.01/(self.config.lambd * entropy)) * -log_like
+
+        reward = part1 * scale
+        tf.summary.Summary.Value(tag='int_reward', simple_value = reward)
+
+        return np.clip(reward, 0, 1)
 
     def sample_inference(self):
         self.inference_number += 1
         print('[ACP] Write a sample inference at %d step'%(self.global_step))
 
         nnInput, nnLabel = self.memory.sample()
-        output, probability, entropy = self.brain.infer(self.sess, nnInput)
+        output, probability, entropy, log_like, nvp_batch = self.brain.infer(self.sess, nnInput)
         data = {'input': nnInput, 'label':nnLabel, 'output': output,\
                 'prob':probability, 'entropy':entropy}
 
@@ -124,6 +129,7 @@ class acp():
 
         if int(self.global_step)%self.summaryFreq == 0:
             self.writer.add_summary(summary, self.global_step)
+            self.writer.flush()
         if int(self.global_step)%self.saveFreq == 0:
             self._saver.save(self.sess, self.savedir+'/models', global_step=self.global_step)
         return loss, train_step

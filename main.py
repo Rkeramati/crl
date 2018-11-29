@@ -28,6 +28,7 @@ flags.DEFINE_string('gpu_fraction', '1/1', 'idx / # of gpu fraction e.g. 1/3, 2/
 flags.DEFINE_boolean('display', False, 'Whether to do display the game screen or not')
 flags.DEFINE_boolean('is_train', True, 'Whether to do training or testing')
 flags.DEFINE_integer('random_seed', 123, 'Value of random seed')
+flags.DEFINE_boolean('int_reward', True, 'wether to use intrinsic reward')
 
 FLAGS = flags.FLAGS
 
@@ -69,7 +70,7 @@ def main(_):
 
     # Becuase of code shittines, these steps should be after each other!
     acpAgent = acp.acp(sess, ACPconfig)
-    agentDQN = Agent(config, env, acpAgent, sess)
+    agentDQN = Agent(config, env, acpAgent, sess, FLAGS.int_reward)
     acpAgent.setdir(agentDQN.model_dir)
 
     sess.run(tf.initializers.global_variables())

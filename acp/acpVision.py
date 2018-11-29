@@ -9,10 +9,14 @@ class acpVision():
      self.targetHeight = 160
      self.targetWidth = 160
      self.targetSize = 84
+     self.normalize=True
 
  def rgb2gray(self, image):
      # Converting rgb2gray
-     return np.dot(image[...,:3], [0.299, 0.587, 0.114])
+     if self.normalize:
+         return np.dot(image[...,:3], [0.299, 0.587, 0.114])/256.0
+     else:
+         return np.dot(image[...,:3], [0.299, 0.587, 0.114])
 
  def resize(self, image):
      # take an image gray with dim 2

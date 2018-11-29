@@ -7,11 +7,11 @@ if (sys.version_info[0]==2):
 elif (sys.version_info[0]==3):
   import _pickle as cPickle
 
-try:
-  from scipy.misc import imresize
-except:
-  import cv2
-  imresize = cv2.resize
+#try:
+#  from scipy.misc import imresize
+#except:
+import cv2
+imresize = cv2.resize
 
 def rgb2gray(image):
   return np.dot(image[...,:3], [0.299, 0.587, 0.114])

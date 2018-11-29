@@ -24,6 +24,9 @@ class ACPConfig():
          self.acpSummaryFreq = SUMMARYFREQ
          self.lambd = ACPLambd
          self.beta = ACPBeta
+         self.lossBalance = 0.1
+         self.maxIntReward = 1
+         self.flow_model='downsample'
 
 
 class AgentConfig(object):
@@ -60,7 +63,7 @@ class AgentConfig(object):
   double_q = False
   dueling = False
 
-  _test_step = 5 * scale
+  _test_step = 600 #5 * scale
   _save_step = SAVEFREQ
   summary_freq = SUMMARYFREQ
 

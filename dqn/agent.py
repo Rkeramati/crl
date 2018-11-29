@@ -14,12 +14,13 @@ from .ops import linear, conv2d, clipped_error
 from .utils import get_time, save_pkl, load_pkl
 
 class Agent(BaseModel):
-  def __init__(self, config, environment, acpAgent, sess):
+  def __init__(self, config, environment, acpAgent, sess, int_reward):
     super(Agent, self).__init__(config)
     self.sess = sess
     self.acpAgent = acpAgent
     self.summaryFreq = config.summary_freq
     self.weight_dir = 'weights'
+    self.int_reward = int_reward
 
     self.env = environment
     self.history = History(self.config)
@@ -60,7 +61,10 @@ class Agent(BaseModel):
       next_acp_screen = self.env._screen
 
       #observe
-      int_reward = self.acpAgent.observe(acp_screen, action, next_acp_screen, self.step)
+      if self.int_reward:
+          int_reward = self.acpAgent.observe(acp_screen, action, next_acp_screen, self.step)
+      else:
+          int_reward = 0
       #print('Intrinsic Reward Added: %g'%(int_reward))
       self.observe(screen, reward + int_reward, action, terminal)
 
@@ -69,7 +73,8 @@ class Agent(BaseModel):
 
         num_game += 1
         ep_rewards.append(ep_reward)
-        ep_int_rewards.append(ep_int_reward)
+        if not np.isnan(ep_int_reward):
+            ep_int_rewards.append(ep_int_reward)
         ep_reward = 0.
         ep_int_reward = 0.
       else:
@@ -78,7 +83,8 @@ class Agent(BaseModel):
 
       actions.append(action)
       total_reward += reward
-      total_int_reward += int_reward
+      if not np.isnan(int_reward):
+        total_int_reward += int_reward
 
       if self.step >= self.learn_start:
         if self.step%self.save_step == 0:
@@ -100,9 +106,6 @@ class Agent(BaseModel):
 
           print('\n[DQN] avg_r: %.4f, avg_int_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f, max_ep_r: %.4f, min_ep_r: %.4f, # game: %d' \
               % (avg_reward, avg_int_reward, avg_loss, avg_q, avg_ep_reward, max_ep_reward, min_ep_reward, num_game))
-          #print('[ACP] avg_loss: %.4f, avg_accuracy: %.4f'%(self.acpAgent.average_loss,\
-                  #self.acpAgent.average_accuracy))
-
           if max_avg_ep_reward * 0.9 <= avg_ep_reward:
             self.step_assign_op.eval({self.step_input: self.step + 1})
             self.save_model(self.step + 1)
@@ -120,7 +123,7 @@ class Agent(BaseModel):
                 'episode.avg reward': avg_ep_reward,
                 'episode.num of game': num_game,
                 'episode.rewards': ep_rewards,
-                'episode.int_reward': ep_int_rewards,
+                'episode.int rewards': ep_int_rewards,
                 'episode.actions': actions,
                 'training.learning_rate': self.learning_rate_op.eval({self.learning_rate_step: self.step}),
               }, self.step)
@@ -159,7 +162,6 @@ class Agent(BaseModel):
       if self.step % self.train_frequency == 0:
         self.q_learning_mini_batch()
         self.acpAgent.train() # Training ACP agent
-
       if self.step % self.target_q_update_step == self.target_q_update_step - 1:
         self.update_target_q_network()
 
@@ -195,6 +197,7 @@ class Agent(BaseModel):
 
     if int(self.step)%self.summaryFreq == 0:
         self.writer.add_summary(summary_str, self.step)
+        self.writer.flush()
     self.total_loss += loss
     self.total_q += q_t.mean()
     self.update_count += 1
@@ -330,8 +333,9 @@ class Agent(BaseModel):
           self.learning_rate_op, momentum=0.95, epsilon=0.01).minimize(self.loss)
 
     with tf.variable_scope('summary'):
-      scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
-          'episode.max reward', 'episode.min reward', 'episode.avg reward', 'episode.num of game', 'training.learning_rate']
+      scalar_summary_tags = ['average.reward', 'average.int reward', 'average.loss', 'average.q', \
+          'episode.max reward', 'episode.min reward', 'episode.avg reward',\
+          'episode.num of game', 'training.learning_rate']
 
       self.summary_placeholders = {}
       self.summary_ops = {}
@@ -340,7 +344,7 @@ class Agent(BaseModel):
         self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
         self.summary_ops[tag]  = tf.summary.scalar("%s-%s/%s" % (self.env_name, self.env_type, tag), self.summary_placeholders[tag])
 
-      histogram_summary_tags = ['episode.rewards', 'episode.actions']
+      histogram_summary_tags = ['episode.rewards', 'episode.actions', 'episode.int rewards']
 
       for tag in histogram_summary_tags:
         self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
@@ -391,7 +395,7 @@ class Agent(BaseModel):
     })
     for summary_str in summary_str_lists:
       self.writer.add_summary(summary_str, self.step)
-
+    self.writer.flush()
   def play(self, n_step=10000, n_episode=100, test_ep=None, render=False):
     if test_ep == None:
       test_ep = self.ep_end
