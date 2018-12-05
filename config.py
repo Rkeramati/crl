@@ -52,6 +52,7 @@ class AgentConfig(object):
   ep_end = 0.1
   ep_start = 1.
   ep_end_t = memory_size
+  test_episode = 1000
 
   history_length = 4
   train_frequency = 4

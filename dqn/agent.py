@@ -6,6 +6,7 @@ import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
 import functools
+import pickle
 
 from .base import BaseModel
 from .history import History
@@ -55,7 +56,10 @@ class Agent(BaseModel):
 
       # 1. predict
       acp_screen = self.env._screen
-      action = self.predict(self.history.get())
+      if self.int_reward:
+          action = self.predict(self.history.get(), 0)
+      else:
+          action = self.predict(self.history.get()) # e-greedy without intrinsic reward
       # 2. act
       screen, reward, terminal = self.env.act(action, is_training=True)
       next_acp_screen = self.env._screen
@@ -72,6 +76,9 @@ class Agent(BaseModel):
         screen, reward, action, terminal = self.env.new_random_game()
 
         num_game += 1
+        if num_game % self.test_episode == 0:
+            print('Evluating at episode %d'%(num_game))
+            self.evaluate(self.step)
         ep_rewards.append(ep_reward)
         if not np.isnan(ep_int_reward):
             ep_int_rewards.append(ep_int_reward)
@@ -139,6 +146,39 @@ class Agent(BaseModel):
           ep_rewards = []
           ep_int_rewards = []
           actions = []
+
+  def evaluate(self, step, num_ep = 30):
+    ep = 0
+    ep_reward = []
+    screen_ep = []
+    total_reward = 0
+    eval_history = History(self.config)
+
+    while ep<num_ep:
+        # 1. predict
+        acp_screen = self.env._screen
+        screen_ep.append(self.env.screen)
+        action = self.predict(eval_history.get(), test_ep=0)
+        # 2. act
+        screen, reward, terminal = self.env.act(action, is_training=True)
+        eval_history.add(screen)
+        total_reward += reward
+        if terminal:
+            ep_reward.append(total_reward)
+            total_reward = 0
+            save_file = open('./logs/%s'%(self.model_dir + "evaluate_%d_ep_%d.pkl"%(step,ep)), "wb")
+            #print("save at " + './logs/%s'%(self.model_dir + "_evaluate_%d_ep_%d.pkl"%(step,ep)))
+            pickle.dump({"screen": screen_ep}, save_file)
+            save_file.close()
+            screen, reward, action, terminal = self.env.new_random_game()
+            ep += 1
+            screen_ep = []
+
+    self.inject_summary({
+                'average.eval.ep reward': np.mean(ep_reward),
+                'average.eval.ep max reward': np.max(ep_reward),
+                'average.eval.ep min reward': np.mean(ep_reward)}
+                , step)
 
   def predict(self, s_t, test_ep=None):
     ep = test_ep or (self.ep_end +
@@ -335,7 +375,8 @@ class Agent(BaseModel):
     with tf.variable_scope('summary'):
       scalar_summary_tags = ['average.reward', 'average.int reward', 'average.loss', 'average.q', \
           'episode.max reward', 'episode.min reward', 'episode.avg reward',\
-          'episode.num of game', 'training.learning_rate']
+          'episode.num of game', 'training.learning_rate',\
+          'average.eval.ep reward', 'average.eval.ep max reward', 'average.eval.ep min reward']
 
       self.summary_placeholders = {}
       self.summary_ops = {}
