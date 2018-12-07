@@ -157,7 +157,7 @@ class Agent(BaseModel):
     while ep<num_ep:
         # 1. predict
         acp_screen = self.env._screen
-        screen_ep.append(self.env.screen)
+        screen_ep.append(self.env._screen)
         action = self.predict(eval_history.get(), test_ep=0)
         # 2. act
         screen, reward, terminal = self.env.act(action, is_training=True)

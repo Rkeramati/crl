@@ -96,16 +96,19 @@ class acp():
 
         nnInput, nnLabel = self.makeInputLabel()
         self.memory.add(nnInput, nnLabel)
-        _, _, entropy, log_like, _ = self.brain.infer(self.sess, nnInput)
-        return self.int_reward(entropy, log_like)
+        _, _, entropy, learning, _ = self.brain.infer(self.sess, nnInput) #infering flow_model = Train
 
-    def int_reward(self, entropy,log_like):
-        scale = 1e-3
-        part1 = (0.01/(self.config.lambd * entropy)) * -log_like
+        return self.int_reward(entropy, learning, step)
 
-        reward = part1 * scale
-        tf.summary.Summary.Value(tag='int_reward', simple_value = reward)
+    def int_reward(self, entropy, learning, step):
 
+        scale = self.config.reward_scale
+        const = 1.0
+
+        N = (np.exp(const * 1/np.sqrt(step) * np.max([learning, 0.001])) - 1)**(-1)
+        c = (1/entropy)
+
+        reward = scale * (c/np.sqrt(N+0.002))
         return np.clip(reward, 0, 1)
 
     def sample_inference(self):

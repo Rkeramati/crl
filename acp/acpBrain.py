@@ -113,7 +113,7 @@ class acpBrain():
             # Loss function for real_nvp
             self.flow_output = self.nvp.log_prob(self.flow_input)
             self.nvpLoss = -tf.reduce_mean(self.flow_output)
-            self.loss = self.acpLoss + self.config.lossBalance * self.nvpLoss
+            self.loss = self.acpLoss #+ self.config.lossBalance * self.nvpLoss
 
             tf.summary.scalar('flow_loss', self.nvpLoss)
 
@@ -129,6 +129,9 @@ class acpBrain():
             self.optimizer = tf.train.AdamOptimizer(learning_rate=self.lr, name="Adam")
             self.train_op = self.optimizer.minimize(self.loss, global_step=self.acp_train_step)
 
+            self.flowOptimizer = tf.train.AdamOptimizer(learning_rate=self.lr, name = "Adam_Flow")
+            self.flow_train_op = self.flowOptimizer.minimize(self.nvpLoss)
+
     def predict(self, sess, nnInput):
         # Query the network for a given input x
         # Output: action index
@@ -142,9 +145,16 @@ class acpBrain():
         if nnInput.ndim == 3:
             nnInput = np.expand_dims(nnInput, axis = 0) #batch size 1
 
-        output, probability, entropy, loglike, flow_out = sess.run([self.output, self.prob, self.H, self.nvpLoss, self.flow_output],\
+        output, probability, entropy, loglike, flow_out, _ =\
+                sess.run([self.output, self.prob, self.H,\
+                self.nvpLoss, self.flow_output, self.flow_train_op],\
                 feed_dict={self.input : nnInput})
-        return output, probability, entropy, np.mean(loglike), 0
+
+        loglike_after = sess.run([self.nvpLoss], feed_dict={self.input : nnInput})[0]
+
+        learning = np.mean(-loglike_after + loglike)
+
+        return output, probability, entropy, learning, 0
 
     def train(self, sess, label, nnInput, summaryOp):
         # Train neural net on a batch of n=inputs

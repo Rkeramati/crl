@@ -1,12 +1,13 @@
-ACPHistory = 8
+ACPHistory = 4
 ACPBatch = 32
 ACPLambd = 100
 ACPBeta = 0.01
 SAVEFREQ = 100000
 SUMMARYFREQ = 200
 
+
 class ACPConfig():
-     def __init__(self, env):
+     def __init__(self, env, FLAGS):
          # General config
          self.resizeImageSize = 84
          self.nActions = env.action_size
@@ -26,10 +27,15 @@ class ACPConfig():
          self.beta = ACPBeta
          self.lossBalance = 0.1
          self.maxIntReward = 1
-         self.flow_model='downsample'
+         self.flow_model = FLAGS.flow_model
+         self.reward_scale= FLAGS.reward_scale
 
 
 class AgentConfig(object):
+
+  flow_model = 'downsample'
+  reward_scale = 1e-1
+
   scale = 10000
   display = False
 
@@ -52,11 +58,11 @@ class AgentConfig(object):
   ep_end = 0.1
   ep_start = 1.
   ep_end_t = memory_size
-  test_episode = 1000
+  test_episode = 2000
 
   history_length = 4
   train_frequency = 4
-  learn_start = 500 #5. * scale
+  learn_start = 1000 #5. * scale
 
   min_delta = -1
   max_delta = 1
@@ -64,7 +70,7 @@ class AgentConfig(object):
   double_q = False
   dueling = False
 
-  _test_step = 600 #5 * scale
+  _test_step = 1000 #5 * scale
   _save_step = SAVEFREQ
   summary_freq = SUMMARYFREQ
 

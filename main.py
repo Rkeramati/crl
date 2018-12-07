@@ -29,6 +29,8 @@ flags.DEFINE_boolean('display', False, 'Whether to do display the game screen or
 flags.DEFINE_boolean('is_train', True, 'Whether to do training or testing')
 flags.DEFINE_integer('random_seed', 123, 'Value of random seed')
 flags.DEFINE_boolean('int_reward', True, 'wether to use intrinsic reward')
+flags.DEFINE_string('flow_model', 'downsample', 'type of the flow model')
+flags.DEFINE_float('reward_scale', 1e-3, 'intrinsic reward scale')
 
 FLAGS = flags.FLAGS
 
@@ -59,7 +61,7 @@ def main(_):
     else:
       env = GymEnvironment(config)
 
-    ACPconfig = ACPConfig(env)
+    ACPconfig = ACPConfig(env, FLAGS)
 
 
     if not tf.test.is_gpu_available() and FLAGS.use_gpu:
