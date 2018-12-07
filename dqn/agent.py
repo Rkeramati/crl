@@ -65,9 +65,8 @@ class Agent(BaseModel):
       next_acp_screen = self.env._screen
 
       #observe
-      if self.int_reward:
-          int_reward = self.acpAgent.observe(acp_screen, action, next_acp_screen, self.step)
-      else:
+      int_reward = self.acpAgent.observe(acp_screen, action, next_acp_screen, self.step)
+      if not self.int_reward:
           int_reward = 0
       #print('Intrinsic Reward Added: %g'%(int_reward))
       self.observe(screen, reward + int_reward, action, terminal)
