@@ -109,6 +109,7 @@ class acp():
         c = (1/entropy)
 
         reward = scale * (c/np.sqrt(N+0.002))
+        print(reward)
         return np.clip(reward, 0, 1)
 
     def sample_inference(self):
