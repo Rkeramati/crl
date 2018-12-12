@@ -11,9 +11,13 @@ class ENV:
         self.random_symbol = 's'
 
         self.reward_map = {'#': 0, ' ':0, 's': 0, 'g': 1, '0': 0, 'j': 0.2, 'd':0, 'u':0}
-        self.terminal_map = {'#': 0,  ' ':0, 's': 0, 'g': 1, '0': 0, 'j': 1, 'd':0, 'u':0}
+        self.terminal_map = {'#': 0,  ' ':0, 's': 0, 'g': 0, '0': 0, 'j': 1, 'd':0, 'u':0}
         self.action_space = ['UP', 'RI', 'DO', 'LE']
         self.nA = len(self.action_space)
+        ## Extra:
+        #self.reward_map['d'] = -1/np.log(self.nA)
+        #self.reward_map['u'] = -1/np.log(self.nA)
+        #print('neg reward:', -1/np.log(self.nA))
 
         self.map, self.state, self.reward, self.terminal = self.readmap(mapFile, random)
 

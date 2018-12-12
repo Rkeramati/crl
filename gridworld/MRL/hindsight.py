@@ -65,11 +65,11 @@ class DH():
                     if self.terminal[s] != 1:
                         self.Q[s,a] = self.gamma * np.sum(self.transitions[s, : ,a] * m) +\
                             np.sum(self.transitions[s, : ,a] * (self.reward[s, : ,a] +\
-                            (self.beta + 1/((1/self.beta)+self.lambd*self.entropy[s, : , a]))\
+                            (self.beta + 0*(1/((1/self.beta)+self.lambd*self.entropy[s, : , a])))\
                             /np.sqrt(self.count[s, : ,a])))
                     else: # that is sketchy but shouldn't make difference!
                         self.Q[s,a] = self.reward[s, s ,a] +\
-                             (self.beta + 1/((1/self.beta)+self.lambd*self.entropy[s, s , a]))\
+                             (self.beta + 0* (1/((1/self.beta)+self.lambd*self.entropy[s, s , a])))\
                              /np.sqrt(self.count[s, s ,a])
         np.set_printoptions(precision=1, linewidth=100, suppress=True)
 

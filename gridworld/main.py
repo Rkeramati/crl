@@ -13,7 +13,7 @@ def parse_args():
      parser.add_argument('--method', default='MBIE', help='what method to use')
      parser.add_argument('--ent_known', type=int, default=0, help='if knowing entropy')
      parser.add_argument('--random', type=float, default=0, help='how much randomness to add')
-     parser.add_argument('--map_name', default='maps/map_fourroom_exp1.txt', help='map name')
+     parser.add_argument('--map_name', default='maps/safe.txt', help='map name')
      parser.add_argument('--n_trial', type=int, default=2, help='number of trail for each method')
      parser.add_argument('--n_sample', type=int, default=1, help='number of samples for random env')
      parser.add_argument('--max_ep', type=int, default=500, help = 'maximum number of episdoes')
@@ -68,16 +68,21 @@ def main():
                 while not terminal and step < args.max_step:
                     action = np.random.choice(np.flatnonzero(mrl.Q[s, :] == mrl.Q[s,:].max()))
                     ns, r, terminal = env.step(action)
+                    ent = 0.1 * 1/(1 + 10*np.mean(mrl.entropy[s, ns, :]))
+                    r += ent
                     R.append(r)
                     mrl.observe(s,action,ns,r, terminal)
                     step += 1
                     s = ns
+                    #print(step)
+                    env._render()
 
                 result[sample, trial, episode, 0] = step
                 result[sample, trial, episode, 1] = disc_return(R, mrl.gamma)
                 mrl.Qupdate()
                 print(episode, step, disc_return(R, mrl.gamma), np.max(mrl.Q))
-                #print(np.max(mrl.Q, axis=1).reshape(13,13))
+                print(np.argmax(mrl.Q, axis=1).reshape(11,11))
+                env._render()
             try:
                 np.save(save_dir + "entopy_trail_{}_sample_{}.npy".format(trial, sample), mrl.entropy)
             except:
