@@ -7,6 +7,7 @@ class stopping_env():
 
         self.fu = 1.5
         self.fd = 0.8
+        self.ph = 0.1
         self.p = 0.65
 
         self.nS = 20
@@ -23,7 +24,7 @@ class stopping_env():
                 self.cost = self.fu * self.cost
             else:
                 self.cost = self.fd * self.cost
-            return self.state, self.p, False
+            return self.state, self.ph, False
     def reset(self):
         self.state = 0
         self.cost = 1
@@ -49,26 +50,28 @@ class CVaROptimize():
         self.Cmax = config.Cmax
 
         self.counter = 1
+        self.lr_def = 1e-2
     def softmax(self, x): #softmax function
         return np.exp(x) / np.sum(np.exp(x), axis=0)
 
     def _update_lr(self):
-        self.lr['lr1'] = 1.0/self.counter
-        self.lr['lr2'] = 1.0/self.counter**(0.85)
-        self.lr['lr3'] = 0.5/self.counter**(0.7)
-        self.lr['lr4'] = 0.5/self.counter**(0.55)
+        self.lr['lr1'] = self.lr_def * 1.0/self.counter
+        self.lr['lr2'] = self.lr_def * 1.0/self.counter**(0.85)
+        self.lr['lr3'] = self.lr_def * 0.5/self.counter**(0.7)
+        self.lr['lr4'] = self.lr_def * 0.5/self.counter**(0.55)
 
         self.counter += 1
     def value_featurize(self, x, s): #featuring value function
         size = self.nS + 1
         feature = np.zeros(size)
-        feature[:self.nS] = x
+        feature[x] = 1
         feature[-1] = s
         return feature
 
     def map_back(self, lambd, policy, nu):
         lambd = np.clip(lambd, 0, self.lambd_max)
         nu = np.clip(nu, -self.Cmax/(1-self.gamma), self.Cmax/(1-self.gamma))
+        policy = np.clip(policy, -60, 60)
         return lambd, policy, nu
 
     def act(self, x, s):
@@ -104,7 +107,7 @@ class CVaROptimize():
         grad_log_policy = np.zeros((self.nA, self.nS+1))
         grad_log_policy[:, :] = -current_policy[a] * self.value_featurize(x,s)
         grad_log_policy[a, :] += self.value_featurize(x,s)
-
+        #print(current_policy)
         policy_update = -self.lr['lr2']/(1-self.gamma) * grad_log_policy * TDerror
 
         # lambda update
@@ -113,13 +116,18 @@ class CVaROptimize():
 
         if terminal:
             lambd_update = self.lr['lr1'] *\
-                    (self.nu - self.beta + self.lambd**k/(1-self.alpha)*np.positive(-s))
+                    (self.nu - self.beta + 1.0/((1-self.alpha)*(1-self.gamma)) *np.positive(-s))
 
         self.lambd = self.lambd + lambd_update
         self.policy = self.policy + policy_update
         self.nu = self.nu + nu_update
+        #print(self.policy)
+        self.value += value_update
 
         self.lambd, self.policy, self.nu = self.map_back(self.lambd, self.policy, self.nu)
+
+        if terminal:
+            ns = self.nu
 
         return ns
 
