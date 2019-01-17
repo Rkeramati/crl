@@ -34,11 +34,11 @@ class CVaROptimize():
     def __init__(self, config):
         self.lr = {'lr1': 1e-5, 'lr2': 1e-4, 'lr3': 5*1e-4, 'lr4': 1e-3}
 
-        self.policy = np.random.rand(config.nA, config.nS+1) #policy parameters
-        self.value = np.random.rand(config.nS+1)
+        self.policy = np.random.rand(config.nA, 2)*0.05 #policy parameters
+        self.value = np.random.rand(2)*0.05
 
         self.lambd_max = config.lambd_max
-        self.lambd = 1
+        self.lambd = 0.1
         self.nu = 0.1
         self.beta = config.beta
 
@@ -50,9 +50,10 @@ class CVaROptimize():
         self.Cmax = config.Cmax
 
         self.counter = 1
-        self.lr_def = 1e-2
+        self.lr_def = 1e-1
     def softmax(self, x): #softmax function
-        return np.exp(x) / np.sum(np.exp(x), axis=0)
+        e_x = np.exp(x - np.max(x))
+        return e_x / e_x.sum()
 
     def _update_lr(self):
         self.lr['lr1'] = self.lr_def * 1.0/self.counter
@@ -62,10 +63,12 @@ class CVaROptimize():
 
         self.counter += 1
     def value_featurize(self, x, s): #featuring value function
-        size = self.nS + 1
+        size = 2;#self.nS + 1
         feature = np.zeros(size)
-        feature[x] = 1
-        feature[-1] = s
+        #feature[x] = 1
+        #feature[-1] = s
+        rdim1 = x - 0; phi_1 = np.exp(rdim1); feature[0] = phi_1
+        rdim2 = s - 0; phi_2 = np.exp(rdim2); feature[1] = phi_2
         return feature
 
     def map_back(self, lambd, policy, nu):
@@ -88,8 +91,7 @@ class CVaROptimize():
         if not terminal:
             cost = cost
         else:
-            cost = self.lambd * np.positive(-s)/self.alpha
-
+            cost = self.lambd * np.positive(-s)/(1-self.alpha)
         # TD Error
         TDerror = cost + self.gamma * np.dot(self.value, self.value_featurize(nx,ns))-\
             np.dot(self.value, self.value_featurize(x,s))
@@ -100,13 +102,15 @@ class CVaROptimize():
         # Actor Update:
         value_der = (self.value_featurize(self.initial_state, self.nu + 0.001) -\
                      self.value_featurize(self.initial_state, self.nu - 0.001))/(0.002)
+        #print(value_der)
         nu_update = -self.lr['lr3']*(self.lambd + np.dot(self.value, value_der))
 
         # Policy Update
         current_policy = self.softmax(np.dot(self.policy, self.value_featurize(x,s)))
-        grad_log_policy = np.zeros((self.nA, self.nS+1))
-        grad_log_policy[:, :] = -current_policy[a] * self.value_featurize(x,s)
-        grad_log_policy[a, :] += self.value_featurize(x,s)
+        grad_log_policy = np.zeros((self.nA, 2))
+        for actions in range(self.nA):
+            grad_log_policy[actions, :] = -current_policy[actions] * self.value_featurize(x,s)
+        grad_log_policy[a, :] = self.value_featurize(x,s)*(1-current_policy[a])
         #print(current_policy)
         policy_update = -self.lr['lr2']/(1-self.gamma) * grad_log_policy * TDerror
 
@@ -120,15 +124,16 @@ class CVaROptimize():
 
         self.lambd = self.lambd + lambd_update
         self.policy = self.policy + policy_update
+        #print(self.policy[1, :])
         self.nu = self.nu + nu_update
         #print(self.policy)
         self.value += value_update
 
         self.lambd, self.policy, self.nu = self.map_back(self.lambd, self.policy, self.nu)
-
+        #print(self.lambd, self.nu)
         if terminal:
             ns = self.nu
-
+        #print(self.value)
         return ns
 
 
