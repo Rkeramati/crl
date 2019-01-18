@@ -9,26 +9,30 @@ class machine_repair():
         self.final_state = 49
     def reset(self):
         if self.uniform:
-            self.s = np.random.randint(self.nS)
+            self.state = np.random.randint(self.nS)
         else:
-            self.s = 0
-        return self.s
-    def step(self, action):
-        if self.s == self.final_state:
-            if action == 1:
+            self.state = 0
+        return self.state
+    def act(self, action):
+        terminal = False
+        if self.state == self.final_state:
+            if action == 1:#not-repair
                 reward = -np.random.normal(100, 800)
+                terminal = True
             elif action == 0:
                 reward = -np.random.normal(130,20)
+                terminal = True
             else:
                 raise Exception("undefined action")
-            self.s = 0
+            self.state = 0
         else:
             if action == 1:
                 reward = -np.random.normal(0, 1e-4)
-                self.s += 1
+                self.state += 1
             elif action == 0:
                 reward = -np.random.normal(130, 1)
-                self.s = 0
+                terminal = True
+                self.state = 0
             else:
                 raise Exception("undefined action")
-        return self.s, reward, False
+        return self.state, reward, terminal

@@ -10,7 +10,7 @@ class stopping_env():
         self.ph = 0.1
         self.p = 0.65
 
-        self.nS = 20
+        self.nS = 21
         self.nA = 2
 
         self.action_space = {0: 'accept', 1:'reject'}
@@ -33,9 +33,10 @@ class stopping_env():
 class CVaROptimize():
     def __init__(self, config):
         self.lr = {'lr1': 1e-5, 'lr2': 1e-4, 'lr3': 5*1e-4, 'lr4': 1e-3}
+        self.num_feature = 10
 
-        self.policy = np.random.rand(config.nA, 2)*0.05 #policy parameters
-        self.value = np.random.rand(2)*0.05
+        self.policy = np.random.rand(config.nA, self.num_feature)*0.1 #policy parameters
+        self.value = np.random.rand(self.num_feature)*0.1
 
         self.lambd_max = config.lambd_max
         self.lambd = 0.1
@@ -50,7 +51,7 @@ class CVaROptimize():
         self.Cmax = config.Cmax
 
         self.counter = 1
-        self.lr_def = 1e-1
+        self.lr_def = 1
     def softmax(self, x): #softmax function
         e_x = np.exp(x - np.max(x))
         return e_x / e_x.sum()
@@ -63,18 +64,23 @@ class CVaROptimize():
 
         self.counter += 1
     def value_featurize(self, x, s): #featuring value function
-        size = 2;#self.nS + 1
-        feature = np.zeros(size)
-        #feature[x] = 1
-        #feature[-1] = s
-        rdim1 = x - 0; phi_1 = np.exp(rdim1); feature[0] = phi_1
-        rdim2 = s - 0; phi_2 = np.exp(rdim2); feature[1] = phi_2
+        size =  self.num_feature - 1
+        x_space = np.linspace(0, 50, size)
+        s_space = np.linspace(-10, 10, size)
+
+        rdim1 = np.expand_dims(x - x_space, axis = 1);
+        rdim2 = np.expand_dims(s - s_space, axis = 1);
+        feature = np.concatenate([rdim1, rdim2], axis = 1)
+        feature = np.linalg.norm(feature, 2, axis= 1)
+        feature = np.exp(-feature/2)
+        feature = np.concatenate([feature, np.array([1])], axis = 0)
+
         return feature
 
     def map_back(self, lambd, policy, nu):
         lambd = np.clip(lambd, 0, self.lambd_max)
         nu = np.clip(nu, -self.Cmax/(1-self.gamma), self.Cmax/(1-self.gamma))
-        policy = np.clip(policy, -60, 60)
+        policy = np.clip(policy, -2, 2)
         return lambd, policy, nu
 
     def act(self, x, s):
@@ -107,7 +113,7 @@ class CVaROptimize():
 
         # Policy Update
         current_policy = self.softmax(np.dot(self.policy, self.value_featurize(x,s)))
-        grad_log_policy = np.zeros((self.nA, 2))
+        grad_log_policy = np.zeros((self.nA, self.num_feature))
         for actions in range(self.nA):
             grad_log_policy[actions, :] = -current_policy[actions] * self.value_featurize(x,s)
         grad_log_policy[a, :] = self.value_featurize(x,s)*(1-current_policy[a])
@@ -124,7 +130,8 @@ class CVaROptimize():
 
         self.lambd = self.lambd + lambd_update
         self.policy = self.policy + policy_update
-        #print(self.policy[1, :])
+        print('Policy Update: %g, Lambd Update: %g, Nu update: %g'%(np.linalg.norm(policy_update),\
+                np.linalg.norm(lambd_update), np.linalg.norm(nu_update)))
         self.nu = self.nu + nu_update
         #print(self.policy)
         self.value += value_update
