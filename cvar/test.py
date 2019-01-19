@@ -1,12 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from env import mrp
+from env import mrp, stopping
 from td import *
 from cvar import *
 from config import *
 
 def compute_loss(cvar, env):
-    it = 0; max_it = 20
+    it = 0; max_it = 5
     value_all = []
     while it < max_it:
         env.reset()
@@ -27,10 +27,10 @@ def compute_loss(cvar, env):
         value_all.append(value)
     return np.mean(value_all)
 
-env = stopping_env()
+env = stopping.stopping_env()
 config = config(env.nS, env.nA)
 
-max_it = 100
+max_it = 50
 max_step = 1000
 step_by_step = np.zeros((max_it, max_step))
 ret = np.zeros(max_it)
@@ -46,22 +46,24 @@ for i in range(max_it):
         td.observe(x, r, nx)
         var = td.variance[x]
         #print(var)
-        r -= 10 * var
+        r -= 0.01 * var
         s = cvar.observe(x, s, action, nx, r, k, terminal)
         x = nx
         if terminal:
             env.reset()
             x = env.state;
-        #step_by_step[i, k] = compute_loss(cvar, env)
+        step_by_step[i, k] = compute_loss(cvar, env)
         #print(step_by_step[i,k])
         k += 1
     ret[i] = compute_loss(cvar, env)
+    np.save('step_by_step_var_0.01.npy', step_by_step)
+    np.save('return_var_0.01.npy', ret)
     #print(s)
     print(i, ret[i])
-print(td.variance)
+#print(td.variance)
 print(ret)
-print(np.mean(ret), np.std(ret))
-np.save('step_by_step.npy', step_by_step)
-np.save('return.npy', ret)
+#print(np.mean(ret), np.std(ret))
+np.save('step_by_step_var_0.01.npy', step_by_step)
+np.save('return_var_0.01.npy', ret)
 plt.hist(ret)
 plt.show()

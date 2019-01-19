@@ -1,46 +1,17 @@
 import numpy as np
-class stopping_env():
-    def __init__(self):
-        self.state = 0
-        self.time = 20
-        self.cost = 1
-
-        self.fu = 1.5
-        self.fd = 0.8
-        self.ph = 0.1
-        self.p = 0.65
-
-        self.nS = 21
-        self.nA = 2
-
-        self.action_space = {0: 'accept', 1:'reject'}
-    def act(self, action):
-        if self.action_space[action] == 'accept' or self.state == self.time:
-            self.state = 0
-            return self.state, self.cost, True
-        if self.action_space[action] == 'reject':
-            self.state += 1
-            if np.random.rand() < self.p:
-                self.cost = self.fu * self.cost
-            else:
-                self.cost = self.fd * self.cost
-            return self.state, self.ph, False
-    def reset(self):
-        self.state = 0
-        self.cost = 1
-
 
 class CVaROptimize():
-    def __init__(self, config):
+    def __init__(self, config, name='stopping'):
         self.lr = {'lr1': 1e-5, 'lr2': 1e-4, 'lr3': 5*1e-4, 'lr4': 1e-3}
-        self.num_feature = 10
+        config = config.set(name)
+        self.num_feature = config.num_feature
 
-        self.policy = np.random.rand(config.nA, self.num_feature)*0.1 #policy parameters
-        self.value = np.random.rand(self.num_feature)*0.1
+        self.policy = np.random.rand(config.nA, self.num_feature)*config.initialization_std
+        self.value = np.random.rand(self.num_feature)*config.initialization_std
 
         self.lambd_max = config.lambd_max
-        self.lambd = 0.1
-        self.nu = 0.1
+        self.lambd = config.initial_lambd #0.1
+        self.nu = config.initial_nu #0.1
         self.beta = config.beta
 
         self.gamma = config.gamma
@@ -50,8 +21,12 @@ class CVaROptimize():
         self.initial_state = config.initial_state
         self.Cmax = config.Cmax
 
+        self.x_range = config.x_range
+        self.s_range = config.s_range
+
         self.counter = 1
-        self.lr_def = 1
+        self.lr_def = config.lr
+
     def softmax(self, x): #softmax function
         e_x = np.exp(x - np.max(x))
         return e_x / e_x.sum()
@@ -65,8 +40,8 @@ class CVaROptimize():
         self.counter += 1
     def value_featurize(self, x, s): #featuring value function
         size =  self.num_feature - 1
-        x_space = np.linspace(0, 50, size)
-        s_space = np.linspace(-10, 10, size)
+        x_space = np.linspace(min(self.x_range), max(self.x_range), size)
+        s_space = np.linspace(min(self.s_range), max(self.s_range), size)
 
         rdim1 = np.expand_dims(x - x_space, axis = 1);
         rdim2 = np.expand_dims(s - s_space, axis = 1);
@@ -80,7 +55,7 @@ class CVaROptimize():
     def map_back(self, lambd, policy, nu):
         lambd = np.clip(lambd, 0, self.lambd_max)
         nu = np.clip(nu, -self.Cmax/(1-self.gamma), self.Cmax/(1-self.gamma))
-        policy = np.clip(policy, -2, 2)
+        policy = np.clip(policy, -60, 60)
         return lambd, policy, nu
 
     def act(self, x, s):
@@ -130,8 +105,8 @@ class CVaROptimize():
 
         self.lambd = self.lambd + lambd_update
         self.policy = self.policy + policy_update
-        print('Policy Update: %g, Lambd Update: %g, Nu update: %g'%(np.linalg.norm(policy_update),\
-                np.linalg.norm(lambd_update), np.linalg.norm(nu_update)))
+        #print('Policy Update: %g, Lambd Update: %g, Nu update: %g'%(np.linalg.norm(policy_update),\
+        #        np.linalg.norm(lambd_update), np.linalg.norm(nu_update)))
         self.nu = self.nu + nu_update
         #print(self.policy)
         self.value += value_update
