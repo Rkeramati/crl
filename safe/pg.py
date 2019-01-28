@@ -7,6 +7,13 @@ class pg():
 
         self.alpha = config.valueLr
         self.beta = config.policyLr
+        self.alphaMin = config.policyLrMin
+        self.betaMin = config.valueLrMin
+
+        self.alphaSlope = (self.alphaMin - self.alpha)/config.numIteration
+        self.betaSlope = (self.betaMin - self.beta)/config.numIteration
+
+
         self.b = config.varianceThresh
         self.lambd = config.lambd
 
@@ -21,8 +28,8 @@ class pg():
         self.policyWeight = np.random.randn(self.nA, self.numFeature) * 0.05
 
     def _updateLr(self):
-        self.alpha = self.alpha
-        self.beta = self.beta
+        self.alpha += self.alphaSlope
+        self.beta += self.betaSlope
 
     def _featurize(self, s):
         feature = np.zeros(self.numFeature)
@@ -43,7 +50,7 @@ class pg():
         return ratio
 
     def softmax(self, x):
-        e_x = np.exp(x - np.max(x))
+        e_x = np.exp(10*(x - np.max(x)))
         return e_x / e_x.sum(axis=0) # only difference
 
     def policy(self, s):
@@ -64,10 +71,14 @@ class pg():
         derivative = 0
         if self.variance - self.b > 0:
             derivative = 2*(self.variance - self.b)
-        newPolicyWeight = self.policyWeight + self.beta*(totalReturn - self.lambd*derivative *\
-                (totalReturn**2-2*self.value**2)) * mleRation
+        #derivative = -1/(self.b-self.variance)
+        policyGradient = (totalReturn - self.lambd*derivative *\
+                (totalReturn**2-2*self.value*totalReturn)) * mleRation
+        # Clip:
+        if np.linalg.norm(policyGradient) > 10:
+            policyGradient /= (np.linalg.norm(policyGradient)/10)
 
         self.value = newValue
         self.variance = newVariance
-        self.policyWeight = newPolicyWeight
+        self.policyWeight += self.beta * policyGradient
 

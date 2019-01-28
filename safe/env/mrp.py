@@ -3,8 +3,13 @@ import numpy as np
 # terminal State is a recuring state
 class machine_repair():
     def __init__(self, uniform=False):
-        self.nS = 5
+        self.nS = 8
         self.nA = 2
+        self.maxRew = 23
+        self.minRew = 10
+        self.worseRew = 8
+        self.scale = (self.maxRew - self.minRew)/self.nS
+
         self.uniform = uniform
         self.reset()
         self.final_state = self.nS - 2
@@ -22,11 +27,11 @@ class machine_repair():
         terminal = False
         if self.state == self.final_state:
             if action == 1:#not-repair
-                reward = -np.random.normal(0.8, 1)
+                reward = -np.random.normal(self.worseRew, 10)
                 terminal = True
                 self.state = self.terminal_state
             elif action == 0:
-                reward = -np.random.normal(1,0.1)
+                reward = -np.random.normal(self.maxRew - self.scale*self.state,1)
                 terminal = True
                 self.state = self.terminal_state
             else:
@@ -34,10 +39,10 @@ class machine_repair():
 
         else:
             if action == 1:
-                reward = -np.random.normal(0, 1e-4)
+                reward = -np.random.normal(0, 1e-2 + 0.001*self.state)
                 self.state += 1
             elif action == 0:
-                reward = -np.random.normal(1.5 - (self.state/5), 0.001)
+                reward = -np.random.normal(self.maxRew - self.scale*self.state, 0.1+0.01*self.state)
                 terminal = True
                 self.state = self.terminal_state
             else:
