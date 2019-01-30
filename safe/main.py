@@ -35,6 +35,10 @@ def test_policy(PG, trial=20):
     return np.mean(totalReturn), np.var(totalReturn)
 
 def main(name, lambd):
+    bestPolicy = np.ones(8)
+    bestPolicy[7] = 0
+    bestPolicy[6] = 0
+
     env = mrp.machine_repair()
     const = config(env.nS, env.nA, 'mrp')
     PG = pg(const)
@@ -51,8 +55,9 @@ def main(name, lambd):
         episode = []
         episodePG = []
         while not terminal:
-            policy = PG.policy(state)
-            action = np.random.choice(np.arange(env.nA), p = policy)
+            #policy = PG.policy(state)
+            #action = np.random.choice(np.arange(env.nA), p = policy)
+            action = bestPolicy[state]
             next_state, reward, terminal = env.act(action)
             episode.append((state, action, reward, next_state, terminal))
             episodePG.append((state, action, reward+(lambd*TD.variance(state)/(np.sqrt(stateCount[state]+1))), next_state, terminal))
@@ -71,6 +76,7 @@ def main(name, lambd):
     np.save('result/variance_%s.npy'%(name), learningCurveVariance)
     np.save('result/value_%s.npy'%(name), learningCurveValue)
     np.save('result/variance_all_%s'%(name), TDVariance)
+    print(TDVariance)
     #plt.figure()
     #plt.plot(learningCurveValue)
     #plt.figure()
