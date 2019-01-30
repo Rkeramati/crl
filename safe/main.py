@@ -55,9 +55,9 @@ def main(name, lambd):
         episode = []
         episodePG = []
         while not terminal:
-            #policy = PG.policy(state)
-            #action = np.random.choice(np.arange(env.nA), p = policy)
-            action = bestPolicy[state]
+            policy = PG.policy(state)
+            action = np.random.choice(np.arange(env.nA), p = policy)
+            #action = bestPolicy[state]
             next_state, reward, terminal = env.act(action)
             episode.append((state, action, reward, next_state, terminal))
             episodePG.append((state, action, reward+(lambd*TD.variance(state)/(np.sqrt(stateCount[state]+1))), next_state, terminal))

@@ -30,7 +30,9 @@ class TDVar():
         return np.dot(self._featurize(s), self.secondMomentWeight)
 
     def variance(self, s):
-        return self.secondMoment(s) - self.value(s)**2
+        var = np.load("./result/variance_all_best_0.npy")
+        return var[s]
+        #return self.secondMoment(s) - self.value(s)**2
 
     def update(self, value, secondMoment):
         self._update_lr()
