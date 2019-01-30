@@ -31,8 +31,8 @@ class TDVar():
 
     def variance(self, s):
         var = np.load("./result/variance_all_best_0.npy")
-        return var[s]
-        #return self.secondMoment(s) - self.value(s)**2
+        return var[s, -1]
+        return self.secondMoment(s) - self.value(s)**2
 
     def update(self, value, secondMoment):
         self._update_lr()

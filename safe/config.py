@@ -16,7 +16,7 @@ class config():
         self.valueLrMin = 1e-3
         self.policyLr= 0.001
         self.policyLrMin = 1e-4
-        self.varianceThresh = 1000
+        self.varianceThresh = 5
         self.lambd = 100
 
         #Envinronment Specific:

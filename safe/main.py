@@ -76,7 +76,7 @@ def main(name, lambd):
     np.save('result/variance_%s.npy'%(name), learningCurveVariance)
     np.save('result/value_%s.npy'%(name), learningCurveValue)
     np.save('result/variance_all_%s'%(name), TDVariance)
-    print(TDVariance)
+    #print(TDVariance)
     #plt.figure()
     #plt.plot(learningCurveValue)
     #plt.figure()
