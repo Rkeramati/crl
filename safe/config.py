@@ -3,8 +3,8 @@ class config():
         #General
         self.nS = nS
         self.nA = nA
-        self.gamma = 0.5
-        self.numIteration = 5000
+        self.gamma = 0.9
+        self.numIteration = 500
 
         #Learning Rates:
         self.varTdLearningRate = 0.01
@@ -12,12 +12,16 @@ class config():
 
         #PG:
         self.pgNumFeature = None # if none = nS
-        self.valueLr = 0.1
-        self.policyLr= 0.01
-        self.varianceThresh = 0.01
-        self.lambd = 2
+        self.valueLr = 0.01
+        self.valueLrMin = 1e-3
+        self.policyLr= 0.001
+        self.policyLrMin = 1e-4
+        self.varianceThresh = 1000
+        self.lambd = 100
 
         #Envinronment Specific:
         self.set(envName)
     def set(self, name):
-        pass
+        if name == "mrp":
+            self.rewardScale = 100
+            self.gamma = 0.8
