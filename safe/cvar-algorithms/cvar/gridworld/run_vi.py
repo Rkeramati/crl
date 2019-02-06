@@ -80,8 +80,8 @@ if __name__ == '__main__':
         else:
             V, ret = value_iteration(world, max_iters=100, eps_convergence=1e-3)
         s, obs = V.optimal_path(0.05, False)
-        np.save('cvars_%d.npy'%(j), ret)
-        #print(world.counts)
+        #np.save('cvars_%d.npy'%(j), ret)
+        print(world.counts)
         ret = 0
         for s, a, ns, r in obs:
             world.observe(s,a,ns,r)
@@ -89,8 +89,8 @@ if __name__ == '__main__':
         print("return", ret)
         print("updated for trial %d"%(j))
         returns[j] = ret
-        np.save('returns.npy', returns)
-
+        #np.save('returns.npy', returns)
+        print(world.count)
 
     #pickle.dump((world, V), open('data/models/vi_test.pkl', mode='wb'))
 
