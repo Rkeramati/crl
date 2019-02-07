@@ -71,34 +71,32 @@ if __name__ == '__main__':
 
     np.random.seed(2)
     # ============================= new config
-    world = GridWorld(10, 15, random_action_p=0.1)
-    max_it = 600
-    returns = np.zeros(max_it)
-    for j in range(max_it):
-        if j < 400:
-            V, ret = value_iteration(world, max_iters=10, eps_convergence=1e-3)
-        else:
-            V, ret = value_iteration(world, max_iters=100, eps_convergence=1e-3)
-        s, obs = V.optimal_path(0.05, False)
-        #np.save('cvars_%d.npy'%(j), ret)
-        print(world.counts)
-        ret = 0
-        for s, a, ns, r in obs:
-            world.observe(s,a,ns,r)
-            ret += r
-        print("return", ret)
-        print("updated for trial %d"%(j))
-        returns[j] = ret
-        #np.save('returns.npy', returns)
-        print(world.count)
+    world = GridWorld(5, 6, random_action_p=0.1)
+    # max_it = 1000
+    # returns = np.zeros(max_it)
+    # for j in range(max_it):
+    #     if j < 800:
+    #         V, ret = value_iteration(world, max_iters=50, eps_convergence=1e-3)
+    #     else:
+    #         V, ret = value_iteration(world, max_iters=100, eps_convergence=1e-3)
+    #     s, obs = V.optimal_path(0.05, False)
+    #     np.save('cvars_small_%d.npy'%(j), ret)
+    #     ret = 0
+    #     for s, a, ns, r in obs:
+    #         world.observe(s,a,ns,r)
+    #         ret += r
+    #     print("return", ret)
+    #     print("updated for trial %d"%(j))
+    #     returns[j] = ret
+    #     np.save('returns_small.npy', returns)
 
-    #pickle.dump((world, V), open('data/models/vi_test.pkl', mode='wb'))
+    # pickle.dump((world, V), open('data/models/vi_test.pkl', mode='wb'))
 
     # ============================= load
-    #world, V = pickle.load(open('data/models/vi_test.pkl', 'rb'))
+    world, V = pickle.load(open('data/models/vi_test.pkl', 'rb'))
 
     # ============================= RUN
-    for alpha in np.arange(0.05, 1.01, 0.5):
+    for alpha in np.arange(0.05, 1.01, 0.05):
         pm = InteractivePlotMachine(world, V, alpha=alpha)
         pm.show()
 

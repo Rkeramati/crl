@@ -36,7 +36,7 @@ def epoch(world, policy, max_iters=100, plot_machine=None):
     return S, A, R
 
 
-def optimal_path(world, policy, max=False):
+def optimal_path(world, policy, max_=False):
     """ Optimal deterministic path. """
     s = world.initial_state
     ss = s
@@ -48,7 +48,7 @@ def optimal_path(world, policy, max=False):
     observations = []
     while s not in world.goal_states and it < max_iteration:
         a = policy.next_action(t_fake)
-        if max:
+        if max_:
             temp = max(world.transitions(ss)[a], key=lambda t: t.prob)#max(np.arange(len(world.transitions(ss)[a])))#, p=[x.prob for x in world.transitions(ss)[a]])
             #t = world.transitions(ss)[a][temp]
             t = temp

@@ -29,8 +29,8 @@ class GridWorld:
         # self.risky_goal_states = {State(0, 5)}
         self.risky_goal_states = {}
 
-        self.initial_state = State(self.height - 2, 0)
-        self.goal_states = {State(self.height - 2, self.width - 2)}
+        self.initial_state = State(self.height - 1, 0)
+        self.goal_states = {State(self.height - 1, self.width - 2)}
 
         self.counts = {}
         self.reward= {}
@@ -40,16 +40,18 @@ class GridWorld:
         self.Rmax = 1
 
         self.cliff_states = set()
-        if height != 1:
-            for x in range(width):
-                for y in range(height):
-                    s = State(y, x)
-                    p_cliff = 0.1 * (y / height)**2 * bool(x > 1 and y > 0 and x < width-2 and y < height-1)
-                    if s == self.initial_state or s in self.goal_states:
-                        continue
+        # if height != 1:
+        #     for x in range(width):
+        #         for y in range(height):
+        #             s = State(y, x)
+        #             p_cliff = 0.1 * (y / height)**2 * bool(x > 1 and y > 0 and x < width-2 and y < height-1)
+        #             if s == self.initial_state or s in self.goal_states:
+        #                 continue
 
-                    if np.random.random() < p_cliff:
-                        self.cliff_states.add(s)
+        #             if np.random.random() < p_cliff:
+        #                 self.cliff_states.add(s)
+        self.cliff_states.add(State(2, 2))
+        self.cliff_states.add(State(3, 2))
 
     def states(self):
         """ iterator over all possible states """
