@@ -51,7 +51,9 @@ class GridWorld:
         #            if np.random.random() < p_cliff:
         #                self.cliff_states.add(s)
         self.cliff_states.add(State(2, 2))
+        self.cliff_states.add(State(2, 3))
         self.cliff_states.add(State(3, 2))
+        self.cliff_states.add(State(3, 3))
 
     def states(self):
         """ iterator over all possible states """

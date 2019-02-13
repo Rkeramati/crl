@@ -8,9 +8,9 @@ if __name__ == '__main__':
 
     # ============================= new config
     run_alpha = .2
-    world = GridWorld(5, 5, random_action_p=0.2)
+    world = GridWorld(5, 6, random_action_p=0.3)
 
-    Q = q_learning(world, run_alpha, max_episodes=5000)
+    Q = q_learning(world, run_alpha, max_episodes=20000)
 
     pickle.dump((world, Q), open('data/models/q_10_15.pkl', mode='wb'))
 

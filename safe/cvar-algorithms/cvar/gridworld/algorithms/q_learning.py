@@ -85,6 +85,7 @@ class ActionValueFunction:
 
     def update(self, x, a, x_, r, beta, id=None):
         """ Vectorized CVaR TD update. """
+        self.Q[x.y, x.x, a].count += 1
         d = self.joint_action_dist(x_)
 
         V = np.array(self.Q[x.y, x.x, a].V)
@@ -109,8 +110,9 @@ class ActionValueFunction:
         return np.argmax(yc)
 
     def next_action_alpha_opt(self, x, alpha, const = 10):
-        yc = [self.Q[x.y, x.x, a].expected_value() \
-                + const/np.sqrt(self.Q[x.y, x.x, a].count) for a in self.world.ACTIONS]
+        yc = [self.Q[x.y, x.x, a].yc_alpha(alpha) +\
+                self.Q[x.y, x.x, a].expected_value()/\
+                np.sqrt(self.Q[x.y, x.x, a].count) for a in self.world.ACTIONS]
         return np.argmax(yc)
 
     def next_action_s(self, x, s):
@@ -292,6 +294,7 @@ def q_learning(world, alpha, max_episodes=2e3, max_episode_length=100):
     # count visits for debugging purposes
     counter = np.zeros((world.height, world.width), dtype=int)
     returns = np.zeros(max_episodes)
+    total_qs = np.zeros((4, max_episodes))
     e = 0
     while e < max_episodes:
         if e % 10 == 0:
@@ -301,12 +304,17 @@ def q_learning(world, alpha, max_episodes=2e3, max_episode_length=100):
 
         i = 0
         ret = 0
+        q_s = np.zeros(4)
         while x not in world.goal_states and i < max_episode_length:
 
             counter[x.y, x.x] += 1
 
             #a = eps_greedy(Q.next_action_alpha(x, alpha), eps, world.ACTIONS)
+
             a = Q.next_action_alpha_opt(x, alpha)
+
+            q_s = [Q.Q[world.initial_state.x, world.initial_state.y, a].expected_value() for\
+                    a in world.ACTIONS]
             t = world.sample_transition(x, a)
             x_, r = t.state, t.reward
 
@@ -316,7 +324,9 @@ def q_learning(world, alpha, max_episodes=2e3, max_episode_length=100):
             ret += r
             i += 1
         returns[e] = ret
-        np.save('q_learning_opt.npy', returns)
+        total_qs[:, e] = q_s
+        np.save('q_learning_opt2.npy', returns)
+        np.save('CVaRs_opt2.npy', total_qs)
         e += 1
 
     # # show visit counts
