@@ -7,10 +7,10 @@ if __name__ == '__main__':
     import pickle
 
     # ============================= new config
-    run_alpha = 1.
-    world = GridWorld(10, 15, random_action_p=0.1)
+    run_alpha = .2
+    world = GridWorld(5, 5, random_action_p=0.2)
 
-    Q = q_learning(world, run_alpha, max_episodes=10000)
+    Q = q_learning(world, run_alpha, max_episodes=5000)
 
     pickle.dump((world, Q), open('data/models/q_10_15.pkl', mode='wb'))
 

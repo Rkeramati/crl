@@ -149,7 +149,7 @@ class ValueFunction:
         ## RK : to do with Rmax
         for t in self.world.transition_rmax(State(y, x), a):
             yield t
-            
+
 
     def transition_vars(self, y, x, a):
         return np.array([t.reward + gamma * self.V[t.state.y, t.state.x].var for t in self.transitions(y, x, a)])

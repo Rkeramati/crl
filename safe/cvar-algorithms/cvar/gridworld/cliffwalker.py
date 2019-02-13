@@ -30,26 +30,26 @@ class GridWorld:
         self.risky_goal_states = {}
 
         self.initial_state = State(self.height - 1, 0)
-        self.goal_states = {State(self.height - 1, self.width - 2)}
+        self.goal_states = {State(self.height - 1, self.width - 1)}
 
         self.counts = {}
         self.reward= {}
-        self.Rmax_m = 5
-        self.Rmax_n = 5
+        self.Rmax_m = 20
+        self.Rmax_n = 20
         self.magic_state = State(self.height-1, self.width-1)
-        self.Rmax = 1
+        self.Rmax = 0
 
         self.cliff_states = set()
-        # if height != 1:
-        #     for x in range(width):
-        #         for y in range(height):
-        #             s = State(y, x)
-        #             p_cliff = 0.1 * (y / height)**2 * bool(x > 1 and y > 0 and x < width-2 and y < height-1)
-        #             if s == self.initial_state or s in self.goal_states:
-        #                 continue
+        #if height != 1:
+        #    for x in range(width):
+        #        for y in range(height):
+        #            s = State(y, x)
+        #            p_cliff = 0.1 * (y / height)**2 * bool(x > 1 and y > 0 and x < width-2 and y < height-1)
+        #            if s == self.initial_state or s in self.goal_states:
+        #                continue
 
-        #             if np.random.random() < p_cliff:
-        #                 self.cliff_states.add(s)
+        #            if np.random.random() < p_cliff:
+        #                self.cliff_states.add(s)
         self.cliff_states.add(State(2, 2))
         self.cliff_states.add(State(3, 2))
 
@@ -133,9 +133,8 @@ class GridWorld:
 
     def transition_rmax(self, s, a):
         # count all transitions
-        if s in self.magic_state:
-            return [Transition(state=self.magic_state, prob=1.0, reward=self.Rmax)]
-
+        # if s in self.magic_state:
+        #    return [Transition(state=self.magic_state, prob=1.0, reward=self.Rmax)]
         total = 0
         if s in self.counts.keys():
             if a in self.counts[s].keys():
@@ -149,12 +148,6 @@ class GridWorld:
                 count = self.counts[s][a][ns]
                 transitions.append(Transition(state=ns, prob=1.0*count/total, reward=1.0*self.reward[s][a]/total))
             return transitions
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

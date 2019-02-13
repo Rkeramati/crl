@@ -37,10 +37,26 @@ def epoch(world, policy, max_iters=100, plot_machine=None):
 
 
 def optimal_path(world, policy, max_=False):
+
+    """ Optimal deterministic path. """
+    s = world.initial_state
+    states = [s]
+    t = Transition(s, 0, 0)
+    while s not in world.goal_states:
+        a = policy.next_action(t)
+        t = max(world.transitions(s)[a], key=lambda t: t.prob)
+        s = t.state
+        if s in states:
+            print("ERROR: path repeats {}, last action={}".format(s, world.ACTION_NAMES[a]))
+            return states, states
+        states.append(s)
+    return states, states
+
+    '''
     """ Optimal deterministic path. """
     s = world.initial_state
     ss = s
-    max_iteration = 20
+    max_iteration = 100
     it = 0
     states = [s]
     t = Transition(s, 0, 0)
@@ -70,3 +86,4 @@ def optimal_path(world, policy, max_=False):
         ss = ns
         it+=1
     return states, observations
+    '''

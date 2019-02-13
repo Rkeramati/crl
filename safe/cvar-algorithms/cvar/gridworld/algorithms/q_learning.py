@@ -20,7 +20,7 @@ class ActionValueFunction:
     def update_safe(self, x, a, x_, r, beta, id=None):
         """ Naive TD update that ensures yCVaR convexity. """
         V_x = self.joint_action_dist(x_)
-
+        self.Q[x.y, x.x, a].count += 1
         for v in V_x:
             for i, atom in enumerate(self.atoms[1:]):
                 V = self.Q[x.y, x.x, a].V[i]
@@ -108,6 +108,11 @@ class ActionValueFunction:
         yc = [self.Q[x.y, x.x, a].yc_alpha(alpha) for a in self.world.ACTIONS]
         return np.argmax(yc)
 
+    def next_action_alpha_opt(self, x, alpha, const = 10):
+        yc = [self.Q[x.y, x.x, a].expected_value() \
+                + const/np.sqrt(self.Q[x.y, x.x, a].count) for a in self.world.ACTIONS]
+        return np.argmax(yc)
+
     def next_action_s(self, x, s):
         """
         Select best action according to E[(Z-s)^-].
@@ -176,7 +181,7 @@ class ActionValueFunction:
 
         return p_low + (s - v_low) / (v_high - v_low) * (p_high - p_low)
 
-    def optimal_path(self, alpha):
+    def optimal_path(self, alpha,max_=False):
         """ Optimal deterministic path. """
         from cvar.gridworld.core.policies import VarBasedQPolicy, XiBasedQPolicy, NaiveQPolicy, VarXiQPolicy
         from cvar.gridworld.core.runs import optimal_path
@@ -184,7 +189,7 @@ class ActionValueFunction:
         policy = VarXiQPolicy(self, alpha)
         # policy = XiBasedQPolicy(self, alpha)
         # policy = NaiveQPolicy(self, alpha)
-        return optimal_path(self.world, policy)
+        return optimal_path(self.world, policy, max_)
 
 
 def is_ordered(v):
@@ -205,6 +210,7 @@ class MarkovQState:
         self.atoms = atoms
         self.V = np.zeros(NB_ATOMS)  # VaR estimate
         self.yc = np.zeros(NB_ATOMS)  # CVaR estimate
+        self.count = 1
 
     def plot(self, show=True, ax=None):
         import matplotlib.pyplot as plt
@@ -285,7 +291,7 @@ def q_learning(world, alpha, max_episodes=2e3, max_episode_length=100):
 
     # count visits for debugging purposes
     counter = np.zeros((world.height, world.width), dtype=int)
-
+    returns = np.zeros(max_episodes)
     e = 0
     while e < max_episodes:
         if e % 10 == 0:
@@ -294,19 +300,23 @@ def q_learning(world, alpha, max_episodes=2e3, max_episode_length=100):
         x = world.initial_state
 
         i = 0
+        ret = 0
         while x not in world.goal_states and i < max_episode_length:
 
             counter[x.y, x.x] += 1
 
-            a = eps_greedy(Q.next_action_alpha(x, alpha), eps, world.ACTIONS)
+            #a = eps_greedy(Q.next_action_alpha(x, alpha), eps, world.ACTIONS)
+            a = Q.next_action_alpha_opt(x, alpha)
             t = world.sample_transition(x, a)
             x_, r = t.state, t.reward
 
             Q.update(x, a, x_, r, beta, id=(e, i))
 
             x = x_
-
+            ret += r
             i += 1
+        returns[e] = ret
+        np.save('q_learning_opt.npy', returns)
         e += 1
 
     # # show visit counts
