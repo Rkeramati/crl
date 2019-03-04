@@ -5,15 +5,16 @@ class machine_repair():
     def __init__(self, uniform=False):
         self.nS = 10
         self.nA = 2
-        self.maxRew = 23
-        self.minRew = 10
-        self.worseRew = 8
-        self.scale = (self.maxRew - self.minRew)/self.nS
+        self.repairRew = 130; self.repairStd = 1
+        self.notRepairRew = 0; self.notRepairStd = 1e-4
+        self.repairRewEnd = 130; self.repairRewEndStd = 20
+        self.notRepairRewEnd = 100; self.notReapirRewEndStd = 800
 
         self.uniform = uniform
         self.reset()
         self.final_state = self.nS - 2
         self.terminal_state = self.nS - 1
+
     def reset(self):
         if self.uniform:
             self.state = np.random.randint(self.nS)
@@ -27,24 +28,23 @@ class machine_repair():
         terminal = False
         if self.state == self.final_state:
             if action == 1:#not-repair
-                reward = -np.random.normal(self.worseRew, 10)
-                terminal = True
+                reward = -np.random.normal(self.notRepairRewEnd, self.notReapirRewEndStd)
                 self.state = self.terminal_state
-            elif action == 0:
-                reward = -np.random.normal(self.maxRew - self.scale*self.state,1)
-                terminal = True
+            elif action == 0:#repair
+                reward = -np.random.normal(self.repairRewEnd, self.repairRewEndStd)
                 self.state = self.terminal_state
+                terminal = True
             else:
                 raise Exception("undefined action")
 
         else:
-            if action == 1:
-                reward = -np.random.normal(0, 1e-2 + 0.001*self.state)
+            if action == 1: #not repair
+                reward = -np.random.normal(self.notRepairRew, self.notRepairStd)
                 self.state += 1
-            elif action == 0:
-                reward = -np.random.normal(self.maxRew - self.scale*self.state, 0.1+0.01*self.state)
-                terminal = True
+            elif action == 0: #repair
+                reward = -np.random.normal(self.repairRew, self.repairStd)
                 self.state = self.terminal_state
+                terminal = True
             else:
                 raise Exception("undefined action")
         return self.state, reward, terminal
