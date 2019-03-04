@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import gym
 from env import Gridworld
 from mrp import machine_repair
+import argparse
+parser = argparse.ArgumentParser(description='take input')
+parser.add_argument('name', help='an integer for the accumulator')
+parser.add_argument('trial', help='trial numbers')
 
 class Config():
     def __init__(self, nS, nA):
@@ -103,7 +107,7 @@ class C51():
         e_x = np.exp((x - np.max(x))/temp)
         return e_x / e_x.sum()
 
-def run(k):
+def main(name, version):
     world = machine_repair()
 
     config = Config(world.nS, world.nA)
@@ -169,9 +173,11 @@ def run(k):
         returns_online[ep, :] = tot_rep
         if ep%100 == 0:
             print('episode: %d'%(ep))
-    np.save('e_greedy_online_%d.npy'%(k), returns_online)
-    np.save('e_greedy_eval_%d.npy'%(k), returns)
+    np.save(name + '_e_greedy_online_%d.npy'%(version), returns_online)
+    np.save(name + '_e_greedy_eval_%d.npy'%(version), returns)
 
-for i in range(10):
-    print('Trail: %d out of %d'%(i, 10))
-    run(i)
+if __name__ == "__main__":
+    args = parser.parse_args()
+    for i in range(int(args.trial)):
+        print('Trail: %d out of %d'%(i, int(args.trial)))
+        main(args.name, i)

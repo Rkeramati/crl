@@ -161,9 +161,11 @@ def run(k):
         returns_online[ep, :] = tot_rep
         if ep%100 == 0:
             print('episode: %d'%(ep))
-    np.save('count_based_online_%d.npy'%(k), returns_online)
-    np.save('count_based_eval_%d.npy'%(k), returns)
+    np.save(name + '_count_based_online_%d.npy'%(version), returns_online)
+    np.save(name + '_count_based_eval_%d.npy'%(version), returns)
 
-for i in range(10):
-    print('Trail: %d out of %d'%(i, 10))
-    run(i)
+ if __name__ == "__main__":
+     args = parser.parse_args()
+     for i in range(int(args.trial)):
+         print('Trail: %d out of %d'%(i, int(args.trial)))
+         main(args.name, i)

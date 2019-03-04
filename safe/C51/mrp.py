@@ -3,7 +3,7 @@ import numpy as np
 # terminal State is a recuring state
 class machine_repair():
     def __init__(self, uniform=False):
-        self.nS = 15
+        self.nS = 12
         self.nA = 2
         self.maxRew = 23
         self.minRew = 10
