@@ -122,6 +122,7 @@ class C51():
                 z = self.z[idx]
                 values[n] = z
             Q[a] = np.mean(values)
+        return Q
     def softmax(self, x, temp):
         e_x = np.exp((x - np.max(x))/temp)
         return e_x / e_x.sum()
@@ -176,7 +177,6 @@ def main(name, version, opt):
             o_init = o
             ret = 0
             while not terminal:
-                print(const)
                 a = np.argmax(c51.CVaRopt(o, counts, c=const, alpha=0.25, N=50))
                 no, r, terminal = world.step(a)
                 ret += r
