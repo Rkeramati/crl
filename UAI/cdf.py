@@ -136,7 +136,7 @@ def main(name, version, opt):
     counts = np.zeros((world.nS, world.nA)) + 1
 
     const = opt
-    num_episode = 1500
+    num_episode = 3500
     trial = 50
     returns = np.zeros((num_episode, trial))
     returns_online = np.zeros((num_episode, trial))
@@ -169,20 +169,20 @@ def main(name, version, opt):
                 o = no
             tot_rep[ep_t] = ret
         returns[ep, :] = tot_rep
-
-        tot_rep = np.zeros(trial)
-        for ep_t in range(trial):
-            terminal = False
-            o = world.reset()
-            o_init = o
-            ret = 0
-            while not terminal:
-                a = np.argmax(c51.CVaRopt(o, counts, c=const, alpha=0.25, N=50))
-                no, r, terminal = world.step(a)
-                ret += r
-                o = no
-            tot_rep[ep_t] = ret
-        returns_online[ep, :] = tot_rep
+#
+#        tot_rep = np.zeros(trial)
+#        for ep_t in range(trial):
+#            terminal = False
+#            o = world.reset()
+#            o_init = o
+#            ret = 0
+#            while not terminal:
+#                a = np.argmax(c51.CVaRopt(o, counts, c=const, alpha=0.25, N=50))
+#                no, r, terminal = world.step(a)
+#                ret += r
+#                o = no
+#            tot_rep[ep_t] = ret
+#        returns_online[ep, :] = tot_rep
         if ep%100 == 0:
             print('episode: %d'%(ep))
     np.save(name + '_count_based_cdf_online_%d.npy'%(version), returns_online)

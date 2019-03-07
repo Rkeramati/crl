@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 # Defining a machine repair class, for machine repair env
 # terminal State is a recuring state
 class Nav2D():
-    def __init__(self, seed=6):
+    def __init__(self, seed=1234567):
         np.random.seed(seed)
 
         self.action_space = ["UP", "RI", "DO", "LE"]
@@ -24,11 +24,10 @@ class Nav2D():
         p = np.zeros((self.maxX, self.maxY))
         for i in range(0, 62):
             px = np.exp((i/62)**(exp))/np.exp(1) * 0.3
-            print(px)
             for j in range(10, 45):
-                py = 1-np.exp((abs((j-10) - 17.5)/17.5)**(exp))/np.exp(1) * 0.3
+                py = 1-np.exp((abs((j-10) - 17.5)/17.5)**(5))/np.exp(1) * 0.3
                 p[i,j] = px * py * np.random.randn()
-        idx = np.argsort(-p.flatten())[0:80]
+        idx = np.argsort(-p.flatten())[0:100]
 
         prob = np.zeros((self.maxX, self.maxY)).flatten()
         prob[idx] = 1
@@ -39,7 +38,7 @@ class Nav2D():
 
     def idx(self, state):
         x, y = state
-        return x * self.maxX + y
+        return x * self.maxY + y
 
     def reset(self):
         self.current_state = self.initial_state
@@ -47,9 +46,12 @@ class Nav2D():
         return self.idx(self.current_state)
 
     def step(self, action):
+        if np.random.rand() <= self.delta:
+            action = np.random.randint(self.nA)
+
         x, y =self.current_state
         if self.terminal:
-            return self.idx(self.current_state)
+            return self.idx(self.current_state), -1,  self.terminal
         reward = -1
         # Move
         if self.action_space[action] == "RI":
@@ -62,12 +64,12 @@ class Nav2D():
             y+=1
 
         #check Wall:
-        if x>= self.maxX:
-            x = self.maxX
+        if x>= self.maxX - 1:
+            x = self.maxX - 1
         if x<=0:
             x = 0
-        if y>=self.maxY:
-            y=self.maxY
+        if y>=self.maxY - 1:
+            y=self.maxY - 1
         if y<=0:
             y=0
 
@@ -88,6 +90,7 @@ class Nav2D():
         p = self.obstacles
         x, y = self.current_state
         p[x, y] = 2
+        p[self.goal_state] = 3
         plt.matshow(p.T)
         plt.show()
 
