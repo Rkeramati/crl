@@ -64,16 +64,25 @@ class Nav2D():
             y+=1
 
         #check Wall:
+        hit = False
         if x>= self.maxX - 1:
             x = self.maxX - 1
+            hit = True
         if x<=0:
             x = 0
+            hit = True
         if y>=self.maxY - 1:
             y=self.maxY - 1
+            hit = True
         if y<=0:
             y=0
+            hit = True
 
         self.current_state = (x, y)
+        if hit:
+            reward += -self.M
+            self.terminal = True
+            return self.idx(self.current_state), reward, self.terminal
         # Checl Obstacle
         if self.obstacles[x, y] == 1:
             reward += -self.M

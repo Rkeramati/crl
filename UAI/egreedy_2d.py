@@ -112,21 +112,19 @@ def main(name, version):
     world = Nav2D()
 
     config = Config(world.nS, world.nA)
-    config.Vmin = -30; config.Vmax = 30
+    config.Vmin = -20; config.Vmax = 20
     c51 = C51(config, init = 'random', ifCVaR = True)
     counts = np.zeros((world.nS, world.nA)) + 1
 
-    const = 20
-    num_episode = 3500
+    num_episode = 10000
     trial = 0
     returns = np.zeros((num_episode, trial))
     returns_online = np.zeros((num_episode, trial))
 
-    #CVaRs = np.zeros((num_episode, world.nA))
     for ep in range(num_episode):
         terminal = False
-        e = max(0.3, 0.9 + ep * ((0 - 0.9)/(500)))
-        alpha = max(0.001, 0.5 + ep * ((0.4 - 0.5)/(500)))
+        e = max(0.3, 0.9 + ep * ((0 - 0.9)/(num_episode/4)))
+        alpha = max(0.001, 0.5 + ep * ((0.4 - 0.5)/(num_episode/4)))
         o = world.reset()
         o_init = o
         ret = 0
@@ -138,45 +136,44 @@ def main(name, version):
             no, r, terminal = world.step(a)
             counts[o, a] += 1
             ret += r
-            c51.observe(o, a, r , no, terminal, alpha)
+            c51.observe(o, a, r/world.M , no, terminal, alpha)
             o = no
-
-        print(ep, ret)
-        np.save(name+'_c51_p_%d_%d.npy'%(version, ep), c51.p)
-        np.save(name + '_c51_z_%d_%d.npy'%(vrsion, ep), c51.z)
-
-        # Greedy Policy Performance
-        tot_rep = np.zeros(trial)
-        for ep_t in range(trial):
-            terminal = False
-            o = world.reset()
-            o_init = o
-            ret = 0
-            while not terminal:
-                a = np.argmax(c51.CVaR(o, alpha=0.25, N=50))
-                no, r, terminal = world.step(a)
-                ret += r
-                o = no
-            tot_rep[ep_t] = ret
-        returns[ep, :] = tot_rep
-
-        # Online Policy Performance
-        tot_rep = np.zeros(trial)
-        for ep_t in range(trial):
-            terminal = False
-            o = world.reset()
-            o_init = o
-            ret = 0
-            while not terminal:
-                if np.random.rand() <= e:
-                    a = np.random.randint(world.nA)
-                else:
+        if ep%50==0:
+            print(ep, ret)
+            np.save(name+'_c51_p_e_greedy_%d_%d.npy'%(version, ep), c51.p)
+        if ep%50==0:
+            # Greedy Policy Performance
+            tot_rep = np.zeros(trial)
+            for ep_t in range(trial):
+                terminal = False
+                o = world.reset()
+                o_init = o
+                ret = 0
+                while not terminal:
                     a = np.argmax(c51.CVaR(o, alpha=0.25, N=50))
-                no, r, terminal = world.step(a)
-                ret += r
-                o = no
-            tot_rep[ep_t] = ret
-        returns_online[ep, :] = tot_rep
+                    no, r, terminal = world.step(a)
+                    ret += r
+                    o = no
+                tot_rep[ep_t] = ret
+            returns[ep, :] = tot_rep
+
+            # Online Policy Performance
+            tot_rep = np.zeros(trial)
+            for ep_t in range(trial):
+                terminal = False
+                o = world.reset()
+                o_init = o
+                ret = 0
+                while not terminal:
+                    if np.random.rand() <= e:
+                        a = np.random.randint(world.nA)
+                    else:
+                        a = np.argmax(c51.CVaR(o, alpha=0.25, N=50))
+                    no, r, terminal = world.step(a)
+                    ret += r
+                    o = no
+                tot_rep[ep_t] = ret
+            returns_online[ep, :] = tot_rep
         if ep%100 == 0:
             print('episode: %d'%(ep))
         np.save(name + '_e_greedy_online_%d.npy'%(version), returns_online)

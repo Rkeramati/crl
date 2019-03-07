@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser(description='take input')
 parser.add_argument('name', help='an integer for the accumulator')
 parser.add_argument('trial', help='trial numbers')
 parser.add_argument('opt', help='optimism count')
+parser.add_argument('opt_backup', help='back up optimisim')
 
 class Config():
     def __init__(self, nS, nA):
@@ -127,21 +128,21 @@ class C51():
         e_x = np.exp((x - np.max(x))/temp)
         return e_x / e_x.sum()
 
-def main(name, version, opt):
+def main(name, version, opt, opt_backup):
     world = machine_repair()
 
     config = Config(world.nS, world.nA)
-    config.Vmin = -30; config.Vmax = 30
+    config.Vmin = -50; config.Vmax = 50
     c51 = C51(config, init = 'random', ifCVaR = True)
     counts = np.zeros((world.nS, world.nA)) + 1
 
-    const = opt
     num_episode = 3500
-    trial = 50
+    trial = 5
     returns = np.zeros((num_episode, trial))
     returns_online = np.zeros((num_episode, trial))
 
-    CVaRs = np.zeros((num_episode, world.nA))
+    CVaRs = np.zeros((num_episode, world.nS, world.nA))
+    CVaRsopt = np.zeros((num_episode, world.nS, world.nA))
     for ep in range(num_episode):
         terminal = False
         alpha = max(0.001, 0.5 + ep * ((0.4 - 0.5)/(num_episode/2)))
@@ -149,12 +150,19 @@ def main(name, version, opt):
         o_init = o
         ret = 0
         while not terminal:
-            a = np.argmax(c51.CVaRopt(o, counts, c=const, alpha=0.25, N=50))
+            a = np.argmax(c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50))
+            #print(ep, 'observation:', o, 'CVaR Opt:', c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50))
+            #print(ep, 'observation:', o, 'CVaR non:', c51.CVaR(o, alpha=0.25, N=50))
             no, r, terminal = world.step(a)
             counts[o, a] += 1
             ret += r
-            c51.observe(o, a, r, no, terminal, alpha)
+            c51.observe(o, a, r + opt_backup/np.sqrt(counts[o,a]), no, terminal, alpha)
             o = no
+        for s in range(world.nS):
+            CVaRs[ep, s, :] = c51.CVaR(o, alpha=0.25, N=50)
+            CVaRsopt[ep, s, :] = c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50)
+        np.save(name + '_cdf_CVaR_ep_%d_%d.npy'%(ep, version), CVaRs)
+        np.save(name + '_cdf_CVaRopt_ep_%d_%d.npy'%(ep, version), CVaRsopt)
 
         tot_rep = np.zeros(trial)
         for ep_t in range(trial):
@@ -169,27 +177,27 @@ def main(name, version, opt):
                 o = no
             tot_rep[ep_t] = ret
         returns[ep, :] = tot_rep
-#
-#        tot_rep = np.zeros(trial)
-#        for ep_t in range(trial):
-#            terminal = False
-#            o = world.reset()
-#            o_init = o
-#            ret = 0
-#            while not terminal:
-#                a = np.argmax(c51.CVaRopt(o, counts, c=const, alpha=0.25, N=50))
-#                no, r, terminal = world.step(a)
-#                ret += r
-#                o = no
-#            tot_rep[ep_t] = ret
-#        returns_online[ep, :] = tot_rep
+
+        tot_rep = np.zeros(trial)
+        for ep_t in range(trial):
+            terminal = False
+            o = world.reset()
+            o_init = o
+            ret = 0
+            while not terminal:
+                a = np.argmax(c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50))
+                no, r, terminal = world.step(a)
+                ret += r
+                o = no
+            tot_rep[ep_t] = ret
+        returns_online[ep, :] = tot_rep
         if ep%100 == 0:
             print('episode: %d'%(ep))
-    np.save(name + '_count_based_cdf_online_%d.npy'%(version), returns_online)
-    np.save(name + '_count_based_cdf_eval_%d.npy'%(version), returns)
+        np.save(name + '_cdf_online_%d.npy'%(version), returns_online)
+        np.save(name + '_cdf_eval_%d.npy'%(version), returns)
 
 if __name__ == "__main__":
     args = parser.parse_args()
     for i in range(int(args.trial)):
         print('Trail: %d out of %d'%(i, int(args.trial)))
-        main(args.name, i, float(args.opt))
+        main(args.name, i, float(args.opt), float(args.opt_backup))
