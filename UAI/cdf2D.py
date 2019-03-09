@@ -155,15 +155,15 @@ def main(name, version, opt, opt_backup):
     world = Nav2D()
 
     config = Config(world.nS, world.nA)
-    config.Vmin = -150; config.Vmax = 0
+    config.Vmin = -150; config.Vmax = 50
 
     c51 = C51(config, init = 'random', ifCVaR = True)
     c51_eval = C51(config, init = 'random', ifCVaR = True)
 
     counts = np.zeros((world.nS, world.nA)) + 1
 
-    num_episode = 100000
-    trial = 20
+    num_episode = 4000
+    trial = 10
     returns = np.zeros((num_episode, trial))
     returns_online = np.zeros((num_episode, trial))
 
@@ -177,20 +177,21 @@ def main(name, version, opt, opt_backup):
         ret = 0
         while not terminal:
             values = c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50)
+            print(values)
             a = np.random.choice(np.flatnonzero(values == values.max()))
             no, r, terminal = world.step(a)
             counts[o, a] += 1
             ret += r
             c51.observe(o, a, r, no, terminal, alpha, bonus=opt/np.sqrt(counts[o, a]))
-            c51_eval.observe(o, a, r, no, terminal, alpha, bonus=0)
+            #c51_eval.observe(o, a, r, no, terminal, alpha, bonus=0)
             o = no
-        if ep%50 == 0:
+        if ep%10 == 0:
             # Evaluation
             tot_rep = np.zeros(trial)
 
-            values = np.zeros((world.nS, world.nA))
-            for states in range(world.nS):
-                values[states, :] = c51_eval.CVaR(states, alpha=0.25, N=50)
+            # values = np.zeros((world.nS, world.nA))
+            # for states in range(world.nS):
+            #     values[states, :] = c51_eval.CVaR(states, alpha=0.25, N=50)
 
             for ep_t in range(trial):
                 terminal = False
@@ -198,9 +199,9 @@ def main(name, version, opt, opt_backup):
                 o_init = o
                 ret = 0
                 step = 0
-                while not terminal and step <= 200:
-                    #values = c51_eval.CVaR(o, alpha=0.25, N=50)
-                    a = np.random.choice(np.flatnonzero(values[o, :] == values[o, :].max()))
+                while not terminal and step <= 50:
+                    values = c51_eval.CVaR(o, alpha=0.25, N=50)
+                    a = np.random.choice(np.flatnonzero(values == values.max()))
                     no, r, terminal = world.step(a)
                     ret += r
                     o = no
@@ -210,9 +211,9 @@ def main(name, version, opt, opt_backup):
             # Online:
             tot_rep = np.zeros(trial)
 
-            values = np.zeros((world.nS, world.nA))
-            for states in range(world.nS):
-                values[states, :] = c51.CVaRopt(states, counts, c=opt, alpha=0.25, N=50)
+            # values = np.zeros((world.nS, world.nA))
+            # for states in range(world.nS):
+            #     values[states, :] = c51.CVaRopt(states, counts, c=opt, alpha=0.25, N=50)
 
             for ep_t in range(trial):
                 terminal = False
@@ -220,9 +221,9 @@ def main(name, version, opt, opt_backup):
                 o_init = o
                 ret = 0
                 step = 0
-                while not terminal and step <= 200:
-                    #values = c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50)
-                    a = np.random.choice(np.flatnonzero(values[o, :] == values[o, :].max()))
+                while not terminal and step <= 50:
+                    values = c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50)
+                    a = np.random.choice(np.flatnonzero(values == values.max()))
                     no, r, terminal = world.step(a)
                     ret += r
                     o = no
@@ -233,7 +234,7 @@ def main(name, version, opt, opt_backup):
                 print('episode: %d'%(ep))
             np.save(name + '_cdf_online_%d.npy'%(version), returns_online)
             np.save(name + '_cdf_eval_%d.npy'%(version), returns)
-        if ep%2000 == 0:
+        if ep%20 == 0:
             np.save(name + '_c51_p_%d.npy'%(ep), c51.p)
             np.save(name + '_c51_counts_%d.npy'%(ep), counts)
             np.save(name + '_c51_eval_p_%d.npy'%(ep), c51_eval.p)

@@ -66,7 +66,7 @@ class C51():
                 Q_nx[at] = np.sum(self.p[nx, at, :] * self.z)
             a_star = np.argmax(Q_nx)
         else:
-            Q_nx = self.CVaR(x, alpha, N=20)
+            Q_nx = self.CVaR(n_x, alpha, N=20)
             a_star = np.argmax(Q_nx)
 
         m = np.zeros(self.config.nAtoms)

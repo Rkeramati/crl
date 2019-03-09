@@ -9,7 +9,7 @@ class Cliff():
         self.action_space = ["UP", "RI", "DO", "LE"]
         self.nA = len(self.action_space)
 
-        self.maxX = 6
+        self.maxX = 4
         self.maxY = 4
         self.nS = self.maxX * self.maxY
 
@@ -81,7 +81,7 @@ class Cliff():
 
         #Check goal:
         if self.current_state == self.goal_state:
-            reward = 0
+            reward = -self.M
             self.terminal = True
 
         return self.idx(self.current_state), reward, self.terminal

@@ -154,17 +154,18 @@ def main(name, version, opt, opt_backup):
     world = Cliff(delta=0.1, M=10)
 
     config = Config(world.nS, world.nA)
-    config.Vmin = -100; config.Vmax = 0
+    config.Vmin = -50; config.Vmax = 10
 
     c51 = C51(config, init = 'random', ifCVaR = True)
     c51_eval = C51(config, init = 'random', ifCVaR = True)
 
     counts = np.zeros((world.nS, world.nA)) + 1
 
-    num_episode = 100000
+    num_episode = 5000
     trial = 20
     returns = np.zeros((num_episode, trial))
     returns_online = np.zeros((num_episode, trial))
+    dreturns = np.zeros((num_episode))
 
     CVaRs = np.zeros((num_episode, world.nS, world.nA))
     CVaRsopt = np.zeros((num_episode, world.nS, world.nA))
@@ -173,67 +174,89 @@ def main(name, version, opt, opt_backup):
         alpha = max(0.01, 0.5 + ep * ((0.01 - 0.5)/(num_episode/4)))
         o = world.reset()
         o_init = o
-        ret = 0
+        ret = []
+        buf = []
         while not terminal:
-            values = c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50)
+            values = c51.CVaRopt(o, counts, c=opt, alpha=0.1, N=100)
+            #print(world.current_state, values)
             a = np.random.choice(np.flatnonzero(values == values.max()))
+
             no, r, terminal = world.step(a)
+            if r>=0:
+                print('Reward', r, terminal)
+            #world._render()
             counts[o, a] += 1
-            ret += r
+            ret.append(r)
             c51.observe(o, a, r, no, terminal, alpha, bonus=opt/np.sqrt(counts[o, a]))
-            c51_eval.observe(o, a, r, no, terminal, alpha, bonus=0)
+            buf.append((o, a, r, no, terminal))
             o = no
-        if ep%50 == 0:
+        dret = 0
+        for r in reversed(ret):
+            dret = r + 0.99*dret
+        print('Discounted Return', dret)
+        for s in buf:
+            o, a, r, no, terminal = s
+            c51_eval.observe(o, a, r, no, terminal, alpha, bonus=opt/np.sqrt(counts[o, a]))
+        if ep%1 == 0:
             # Evaluation
             tot_rep = np.zeros(trial)
 
-            values = np.zeros((world.nS, world.nA))
-            for states in range(world.nS):
-                values[states, :] = c51_eval.CVaR(states, alpha=0.25, N=50)
+            # values = np.zeros((world.nS, world.nA))
+            # for states in range(world.nS):
+            #     values[states, :] = c51_eval.CVaR(states, alpha=0.25, N=50)
 
             for ep_t in range(trial):
                 terminal = False
                 o = world.reset()
                 o_init = o
-                ret = 0
                 step = 0
+                ret = []
                 while not terminal and step <= 200:
-                    #values = c51_eval.CVaR(o, alpha=0.25, N=50)
-                    a = np.random.choice(np.flatnonzero(values[o, :] == values[o, :].max()))
+                    values = c51_eval.CVaR(o, alpha=0.1, N=100)
+                    #print(world.current_state, values)
+                    a = np.random.choice(np.flatnonzero(values == values.max()))
                     no, r, terminal = world.step(a)
-                    ret += r
+                    ret.append(r)
                     o = no
                     step += 1
-                tot_rep[ep_t] = ret
+                dret = 0
+                for r in reversed(ret):
+                    dret = r + 0.99*dret
+                tot_rep[ep_t] = dret
+                print(ret)
             returns[ep, :] = tot_rep
+            np.save(name + '_cdf_eval_%d.npy'%(version), returns)
+            print(tot_rep)
             # Online:
             tot_rep = np.zeros(trial)
 
-            values = np.zeros((world.nS, world.nA))
-            for states in range(world.nS):
-                values[states, :] = c51.CVaRopt(states, counts, c=opt, alpha=0.25, N=50)
+            # values = np.zeros((world.nS, world.nA))
+            # for states in range(world.nS):
+            #     values[states, :] = c51.CVaRopt(states, counts, c=opt, alpha=0.25, N=50)
 
             for ep_t in range(trial):
                 terminal = False
                 o = world.reset()
                 o_init = o
-                ret = 0
+                ret = []
                 step = 0
                 while not terminal and step <= 200:
-                    #values = c51.CVaRopt(o, counts, c=opt, alpha=0.25, N=50)
-                    a = np.random.choice(np.flatnonzero(values[o, :] == values[o, :].max()))
+                    values = c51.CVaRopt(o, counts, c=opt, alpha=0.1, N=100)
+                    a = np.random.choice(np.flatnonzero(values == values.max()))
                     no, r, terminal = world.step(a)
-                    ret += r
+                    ret.append(r)
                     o = no
                     step += 1
-                tot_rep[ep_t] = ret
+                dret = 0
+                for r in reversed(ret):
+                    dret = r + 0.99*dret
+                tot_rep[ep_t] = dret
             returns_online[ep, :] = tot_rep
-            print(np.mean(returns[ep, :]))
             if ep%100 == 0:
                 print('episode: %d'%(ep))
             np.save(name + '_cdf_online_%d.npy'%(version), returns_online)
             np.save(name + '_cdf_eval_%d.npy'%(version), returns)
-        if ep%2000 == 0:
+        if ep%20 == 0:
             np.save(name + '_c51_p_%d.npy'%(ep), c51.p)
             np.save(name + '_c51_counts_%d.npy'%(ep), counts)
             np.save(name + '_c51_eval_p_%d.npy'%(ep), c51_eval.p)

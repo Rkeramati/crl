@@ -19,7 +19,7 @@ class Nav2D():
 
         self.gamma = 0.95
         self.delta = 0.05
-        self.M = 2/(1-self.gamma)
+        self.M = 5/(1-self.gamma)
         self.initial_state = (14, 11)
         self.goal_state = (14, 2)
 
@@ -39,6 +39,7 @@ class Nav2D():
 
         self.obstacles[13, 7] = 1
         self.obstacles[13, 5] = 1
+        self.obstacles[15, 4] = 1
         self.obstacles[13, 9] = 1
         self.obstacles[11, 4] = 1
         self.obstacles[11, 3] = 1
@@ -115,7 +116,7 @@ class Nav2D():
 
         #Check goal:
         if self.current_state == self.goal_state:
-            reward = 0
+            reward = self.M
             self.terminal = True
 
         return self.idx(self.current_state), reward, self.terminal
